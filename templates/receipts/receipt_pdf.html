@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ r.receipt_number }}</title>
+  {% include 'receipts/_receipt_styles.html' %}
+  <style>
+    /* Page box matched to the thermal roll so the PDF has no wasted margin. */
+    @page { margin: 0; size: 80mm auto; }
+    body { margin: 0; background: #fff; }
+  </style>
+</head>
+<body>
+  {% include 'receipts/_receipt_body.html' %}
+</body>
+</html>

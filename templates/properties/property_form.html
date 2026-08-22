@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block nav_properties %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'properties:list' %}">Properties</a>
+  {% if prop %}
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  <a href="{% url 'properties:detail' prop.pk %}">{{ prop.name }}</a>
+  {% endif %}
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  {{ page_title }}
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">{{ page_title }}</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-7">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Property Information</h2>
+      </div>
+      <div class="rw-card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+
+          <div class="row">
+            <div class="col-12 col-md-8">
+              <div class="rw-form-group">
+                <label class="rw-label">Property Name <span class="required">*</span></label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                <div class="rw-field-error">{{ form.name.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="rw-form-group">
+                <label class="rw-label">Property Code <span class="required">*</span></label>
+                {{ form.code }}
+                <div class="rw-field-help">Short unique code e.g. ANJU</div>
+                {% if form.code.errors %}
+                <div class="rw-field-error">{{ form.code.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Address</label>
+            {{ form.address }}
+          </div>
+
+          <div class="row">
+            <div class="col-12 col-md-4">
+              <div class="rw-form-group">
+                <label class="rw-label">City</label>
+                {{ form.city }}
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="rw-form-group">
+                <label class="rw-label">County</label>
+                {{ form.county }}
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="rw-form-group">
+                <label class="rw-label">Country</label>
+                {{ form.country }}
+              </div>
+            </div>
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Description</label>
+            {{ form.description }}
+          </div>
+
+          <div class="row">
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Property Image</label>
+                {{ form.image }}
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Status</label>
+                {{ form.status }}
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button type="submit" class="rw-btn rw-btn-primary">
+              <i class="fa fa-save"></i> {{ action }}
+            </button>
+            {% if prop %}
+            <a href="{% url 'properties:detail' prop.pk %}" class="rw-btn rw-btn-ghost">
+              Cancel
+            </a>
+            {% else %}
+            <a href="{% url 'properties:list' %}" class="rw-btn rw-btn-ghost">
+              Cancel
+            </a>
+            {% endif %}
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

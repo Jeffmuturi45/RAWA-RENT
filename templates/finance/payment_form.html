@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Payment{% endblock %}
+{% block page_title %}Record Payment{% endblock %}
+{% block nav_payments %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'finance:payment_list' %}">Payments</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  Record Payment
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">Record Payment</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-7">
+    <div class="rw-card">
+      <div class="rw-card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+          <div class="rw-alert rw-alert-danger">
+            <i class="fa fa-circle-exclamation"></i> {{ form.non_field_errors.0 }}
+          </div>
+          {% endif %}
+
+          <div class="rw-form-group">
+            <label class="rw-label">Tenant <span class="required">*</span></label>
+            {{ form.tenant }}
+            {% if form.tenant.errors %}<div class="rw-field-error">{{ form.tenant.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Amount (KSh) <span class="required">*</span></label>
+                {{ form.amount }}
+                {% if form.amount.errors %}<div class="rw-field-error">{{ form.amount.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Payment Date <span class="required">*</span></label>
+                {{ form.payment_date }}
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Method <span class="required">*</span></label>
+                {{ form.method }}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Reference / M-Pesa Code</label>
+                {{ form.reference }}
+                {% if form.reference.errors %}<div class="rw-field-error">{{ form.reference.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Deposit portion (KSh)</label>
+            {{ form.deposit_amount }}
+            <div class="rw-field-help">Optional. Kept in the deposit account; the rest settles rent (oldest first).</div>
+            {% if form.deposit_amount.errors %}<div class="rw-field-error">{{ form.deposit_amount.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Notes</label>
+            {{ form.notes }}
+          </div>
+
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="rw-btn rw-btn-primary"><i class="fa fa-save"></i> Record Payment</button>
+            <a href="{% url 'finance:payment_list' %}" class="rw-btn rw-btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <div class="rw-alert rw-alert-info">
+      <i class="fa fa-circle-info"></i>
+      Payment is allocated automatically to the oldest outstanding charges first.
+      Any amount beyond what's owed is held as an on-account credit.
+    </div>
+  </div>
+</div>
+
+{% endblock %}

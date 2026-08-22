@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Tenancies{% endblock %}
+{% block page_title %}Tenancies{% endblock %}
+{% block nav_tenancies %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Tenancies</h1>
+    <p class="rw-page-subtitle">{{ total }} tenanc{{ total|pluralize:"y,ies" }} on record</p>
+  </div>
+  <a href="{% url 'tenancies:create' %}" class="rw-btn rw-btn-primary">
+    <i class="fa fa-house-user"></i> New Tenancy
+  </a>
+</div>
+
+<!-- Filters -->
+<form method="get" class="mb-4">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <input
+      type="text"
+      name="q"
+      value="{{ query }}"
+      class="rw-input"
+      placeholder="Search tenant or unit..."
+      style="max-width:280px;"
+    />
+    <select name="status" class="rw-select" style="max-width:190px;">
+      <option value="">All statuses</option>
+      {% for value, label in status_choices %}
+      <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="rw-btn rw-btn-outline">
+      <i class="fa fa-filter"></i> Filter
+    </button>
+    {% if query or selected_status %}
+    <a href="{% url 'tenancies:list' %}" class="rw-btn rw-btn-ghost">Clear</a>
+    {% endif %}
+  </div>
+</form>
+
+<div class="rw-card">
+  <div class="rw-table-wrapper">
+    {% if tenancies %}
+    <table class="rw-table">
+      <thead>
+        <tr>
+          <th>Tenant</th>
+          <th>Unit</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Monthly Rent</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tenancies %}
+        <tr>
+          <td>
+            <a href="{% url 'tenants:detail' t.tenant.pk %}"
+               style="font-weight:600;color:var(--brand-primary);">
+              {{ t.tenant.full_name }}
+            </a>
+            <div style="font-size:12px;color:var(--text-secondary);">{{ t.tenant.tenant_number }}</div>
+          </td>
+          <td>
+            <a href="{% url 'tenancies:detail' t.pk %}" style="font-size:13px;">
+              {{ t.unit.prop.name }} · {{ t.unit.unit_number }}
+            </a>
+          </td>
+          <td>{{ t.start_date }}</td>
+          <td>{{ t.end_date|default:"Present" }}</td>
+          <td class="rw-table-amount">KSh {{ t.monthly_rent|floatformat:0 }}</td>
+          <td>
+            <span class="rw-badge {{ t.get_status_badge }}">
+              {{ t.get_status_display }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-file-contract"></i></div>
+      <div class="rw-empty-title">No tenancies found</div>
+      <div class="rw-empty-text">
+        {% if query or selected_status %}
+          No tenancies match your filters.
+        {% else %}
+          Place a tenant in a unit to create the first tenancy.
+        {% endif %}
+      </div>
+      {% if not query and not selected_status %}
+      <a href="{% url 'tenancies:create' %}" class="rw-btn rw-btn-primary">
+        <i class="fa fa-house-user"></i> New Tenancy
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

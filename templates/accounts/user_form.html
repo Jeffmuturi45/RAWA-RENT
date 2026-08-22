@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block nav_users %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'accounts:user_list' %}">Users</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  {{ page_title }}
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">{{ page_title }}</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-7">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">User Details</h2>
+      </div>
+      <div class="rw-card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+          <div class="rw-alert rw-alert-danger">
+            <i class="fa fa-circle-exclamation"></i> {{ form.non_field_errors.0 }}
+          </div>
+          {% endif %}
+
+          <div class="rw-form-group">
+            <label class="rw-label">Full Name <span class="required">*</span></label>
+            {{ form.full_name }}
+            {% if form.full_name.errors %}<div class="rw-field-error">{{ form.full_name.errors.0 }}</div>{% endif %}
+          </div>
+
+          {% if form.email %}
+          <div class="rw-form-group">
+            <label class="rw-label">Email <span class="required">*</span></label>
+            {{ form.email }}
+            <div class="rw-field-help">Used to sign in. Cannot be changed later.</div>
+            {% if form.email.errors %}<div class="rw-field-error">{{ form.email.errors.0 }}</div>{% endif %}
+          </div>
+          {% else %}
+          <div class="rw-form-group">
+            <label class="rw-label">Email</label>
+            <input type="text" class="rw-input" value="{{ user_obj.email }}" disabled />
+          </div>
+          {% endif %}
+
+          <div class="row">
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Phone</label>
+                {{ form.phone }}
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Role <span class="required">*</span></label>
+                {{ form.role }}
+                {% if is_self %}<div class="rw-field-help">You cannot change your own role.</div>{% endif %}
+                {% if form.role.errors %}<div class="rw-field-error">{{ form.role.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+
+          {% if form.password1 %}
+          <div class="row">
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Password <span class="required">*</span></label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}<div class="rw-field-error">{{ form.password1.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Confirm Password <span class="required">*</span></label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}<div class="rw-field-error">{{ form.password2.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div style="display:flex;gap:20px;align-items:center;margin:8px 0 16px;">
+            <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer;">
+              {{ form.is_active }} Active account
+            </label>
+            {% if form.must_change_password %}
+            <label style="display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer;">
+              {{ form.must_change_password }} Require password change on first login
+            </label>
+            {% endif %}
+          </div>
+
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="rw-btn rw-btn-primary">
+              <i class="fa fa-save"></i> {{ action }}
+            </button>
+            <a href="{% url 'accounts:user_list' %}" class="rw-btn rw-btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

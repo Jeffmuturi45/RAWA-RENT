@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ tenant.full_name }}{% endblock %}
+{% block page_title %}{{ tenant.full_name }}{% endblock %}
+{% block nav_tenants %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'tenants:list' %}">Tenants</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  {{ tenant.full_name }}
+</div>
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">{{ tenant.full_name }}</h1>
+    <p class="rw-page-subtitle">
+      <span style="font-family:monospace;font-weight:600;">{{ tenant.tenant_number }}</span>
+      &nbsp;·&nbsp;
+      <span class="rw-badge {{ tenant.get_status_badge }}">{{ tenant.get_status_display }}</span>
+    </p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    {% if not active_tenancy %}
+    <a href="{% url 'tenancies:create' %}?tenant={{ tenant.pk }}" class="rw-btn rw-btn-outline">
+      <i class="fa fa-house-user"></i> Place in Unit
+    </a>
+    {% endif %}
+    <a href="{% url 'tenants:edit' tenant.pk %}" class="rw-btn rw-btn-primary">
+      <i class="fa fa-pen"></i> Edit Tenant
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- Left column -->
+  <div class="col-12 col-lg-4">
+
+    <!-- Contact -->
+    <div class="rw-card mb-3">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Contact</h2>
+      </div>
+      <div class="rw-card-body">
+        <table style="width:100%;font-size:13px;">
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;width:42%;">Phone</td>
+            <td style="font-weight:600;">{{ tenant.phone }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Email</td>
+            <td>{{ tenant.email|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">National ID</td>
+            <td>{{ tenant.national_id|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Date of Birth</td>
+            <td>{{ tenant.date_of_birth|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;vertical-align:top;">Address</td>
+            <td>{{ tenant.address|default:"—" }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Emergency Contact -->
+    <div class="rw-card mb-3">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Emergency Contact</h2>
+      </div>
+      <div class="rw-card-body">
+        {% if tenant.emergency_contact or tenant.emergency_phone %}
+        <table style="width:100%;font-size:13px;">
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;width:42%;">Name</td>
+            <td style="font-weight:600;">{{ tenant.emergency_contact|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Phone</td>
+            <td>{{ tenant.emergency_phone|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Relation</td>
+            <td>{{ tenant.emergency_relation|default:"—" }}</td>
+          </tr>
+        </table>
+        {% else %}
+        <p style="font-size:13px;color:var(--text-secondary);margin:0;">No emergency contact on record.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Current Placement -->
+    {% if active_tenancy %}
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Current Placement</h2>
+        <span class="rw-badge rw-badge-success">Active</span>
+      </div>
+      <div class="rw-card-body">
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px;">
+          <a href="{% url 'properties:unit_detail' current_unit.pk %}" style="color:var(--brand-primary);">
+            {{ current_property.name }} · Unit {{ current_unit.unit_number }}
+          </a>
+        </div>
+        <table style="width:100%;font-size:13px;margin-top:8px;">
+          <tr>
+            <td style="color:var(--text-secondary);padding:4px 0;">Since</td>
+            <td>{{ active_tenancy.start_date }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:4px 0;">Monthly Rent</td>
+            <td style="font-weight:600;">KSh {{ active_tenancy.monthly_rent|floatformat:0 }}</td>
+          </tr>
+        </table>
+        <a href="{% url 'tenancies:detail' active_tenancy.pk %}"
+           class="rw-btn rw-btn-outline w-100 justify-content-center mt-2">
+          View Tenancy <i class="fa fa-arrow-right ms-1"></i>
+        </a>
+        {% if caps.view_finance %}
+        <a href="{% url 'finance:tenant_statement' active_tenancy.pk %}"
+           class="rw-btn rw-btn-ghost w-100 justify-content-center mt-2">
+          <i class="fa fa-book me-1"></i> View Statement
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="rw-card">
+      <div class="rw-card-body">
+        <div class="rw-empty" style="padding:24px;">
+          <div class="rw-empty-icon"><i class="fa fa-house-circle-xmark"></i></div>
+          <div class="rw-empty-title">Not placed</div>
+          <div class="rw-empty-text">This tenant has no active unit.</div>
+          <a href="{% url 'tenancies:create' %}?tenant={{ tenant.pk }}" class="rw-btn rw-btn-primary">
+            <i class="fa fa-house-user"></i> Place in Unit
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Tenancy History -->
+  <div class="col-12 col-lg-8">
+    <div class="rw-card mb-3">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title"><i class="fa fa-clock-rotate-left me-2"></i>Tenancy History</h2>
+      </div>
+      <div class="rw-table-wrapper">
+        {% if tenancies %}
+        <table class="rw-table">
+          <thead>
+            <tr>
+              <th>Unit</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Monthly Rent</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tenancies %}
+            <tr>
+              <td>
+                <a href="{% url 'tenancies:detail' t.pk %}" style="font-weight:600;color:var(--brand-primary);">
+                  {{ t.unit.prop.name }} · {{ t.unit.unit_number }}
+                </a>
+              </td>
+              <td>{{ t.start_date }}</td>
+              <td>{{ t.end_date|default:"Present" }}</td>
+              <td class="rw-table-amount">KSh {{ t.monthly_rent|floatformat:0 }}</td>
+              <td>
+                <span class="rw-badge {{ t.get_status_badge }}">
+                  {{ t.get_status_display }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="rw-empty">
+          <div class="rw-empty-icon"><i class="fa fa-clock-rotate-left"></i></div>
+          <div class="rw-empty-title">No tenancy history</div>
+          <div class="rw-empty-text">This tenant has not been placed in a unit yet.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if tenant.notes %}
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title"><i class="fa fa-note-sticky me-2"></i>Notes</h2>
+      </div>
+      <div class="rw-card-body">
+        <p style="font-size:13px;color:var(--text-secondary);margin:0;white-space:pre-line;">{{ tenant.notes }}</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

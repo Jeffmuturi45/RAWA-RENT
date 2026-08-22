@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block nav_properties %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'properties:list' %}">Properties</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  <a href="{% url 'properties:detail' prop.pk %}">{{ prop.name }}</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  {{ page_title }}
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">{{ page_title }}</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-5">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">House Type Details</h2>
+      </div>
+      <div class="rw-card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="rw-form-group">
+            <label class="rw-label">Type Name <span class="required">*</span></label>
+            {{ form.name }}
+            <div class="rw-field-help">e.g. Bedsitter, 1 Bedroom, 2 Bedroom</div>
+            {% if form.name.errors %}
+            <div class="rw-field-error">{{ form.name.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Default Rent (KSh)</label>
+                {{ form.default_rent }}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Default Deposit (KSh)</label>
+                {{ form.default_deposit }}
+              </div>
+            </div>
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Description</label>
+            {{ form.description }}
+          </div>
+
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="rw-btn rw-btn-primary">
+              <i class="fa fa-save"></i> {{ action }}
+            </button>
+            <a href="{% url 'properties:detail' prop.pk %}" class="rw-btn rw-btn-ghost">
+              Cancel
+            </a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

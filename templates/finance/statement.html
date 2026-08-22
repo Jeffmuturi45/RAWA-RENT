@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Statement{% endblock %}
+{% block page_title %}Statement{% endblock %}
+{% block nav_tenants %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'tenants:detail' tenancy.tenant.pk %}">{{ tenancy.tenant.full_name }}</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  Statement
+</div>
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Statement — {{ tenancy.tenant.full_name }}</h1>
+    <p class="rw-page-subtitle">{{ tenancy.unit.prop.name }} · Unit {{ tenancy.unit.unit_number }}</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    {% if caps.manage_finance %}
+    <a href="{% url 'finance:payment_record' %}?tenant={{ tenancy.tenant.pk }}" class="rw-btn rw-btn-primary">
+      <i class="fa fa-money-bill-wave"></i> Record Payment
+    </a>
+    <a href="{% url 'finance:charge_add' tenancy.pk %}" class="rw-btn rw-btn-outline">
+      <i class="fa fa-plus"></i> Charge
+    </a>
+    <a href="{% url 'finance:adjustment_add' tenancy.pk %}" class="rw-btn rw-btn-ghost">
+      <i class="fa fa-sliders"></i> Adjust
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon {% if summary.outstanding > 0 %}danger{% else %}success{% endif %}">
+        <i class="fa fa-scale-balanced"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Outstanding</div>
+        <div class="rw-stat-value">KSh {{ summary.outstanding|floatformat:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon primary"><i class="fa fa-vault"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Deposit Held</div>
+        <div class="rw-stat-value">KSh {{ summary.deposit_balance|floatformat:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon secondary"><i class="fa fa-file-invoice"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Deposit Required</div>
+        <div class="rw-stat-value">KSh {{ summary.deposit_required|floatformat:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon warning"><i class="fa fa-triangle-exclamation"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Deposit Shortfall</div>
+        <div class="rw-stat-value">KSh {{ summary.deposit_shortfall|floatformat:0 }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rw-card">
+  <div class="rw-card-header">
+    <h2 class="rw-card-title"><i class="fa fa-book me-2"></i>Account Ledger</h2>
+    <span style="font-size:11px;color:var(--text-secondary);">Positive balance = owed · green = in credit</span>
+  </div>
+  <div class="rw-table-wrapper">
+    {% if rows %}
+    <table class="rw-table rw-ledger-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Description</th>
+          <th style="text-align:right;">Debit</th>
+          <th style="text-align:right;">Credit</th>
+          <th style="text-align:right;">Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.date }}</td>
+          <td>{{ r.description }}</td>
+          <td style="text-align:right;">{% if r.debit %}KSh {{ r.debit|floatformat:0 }}{% else %}—{% endif %}</td>
+          <td style="text-align:right;">{% if r.credit %}KSh {{ r.credit|floatformat:0 }}{% else %}—{% endif %}</td>
+          <td class="balance {% if r.balance > 0 %}negative{% else %}positive{% endif %}" style="text-align:right;">
+            KSh {{ r.balance|floatformat:0 }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-book"></i></div>
+      <div class="rw-empty-title">No ledger entries</div>
+      <div class="rw-empty-text">Generate rent or record a payment to start the ledger.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

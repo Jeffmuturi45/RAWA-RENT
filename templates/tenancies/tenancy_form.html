@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block nav_tenancies %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'tenancies:list' %}">Tenancies</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  {{ page_title }}
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">{{ page_title }}</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-7">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Tenancy Details</h2>
+      </div>
+      <div class="rw-card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+          <div class="rw-alert rw-alert-danger">
+            <i class="fa fa-circle-exclamation"></i>
+            {{ form.non_field_errors.0 }}
+          </div>
+          {% endif %}
+
+          <div class="rw-form-group">
+            <label class="rw-label">Tenant <span class="required">*</span></label>
+            {{ form.tenant }}
+            {% if form.tenant.errors %}
+            <div class="rw-field-error">{{ form.tenant.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Unit <span class="required">*</span></label>
+            {{ form.unit }}
+            <div class="rw-field-help">Only vacant or reserved units are shown.</div>
+            {% if form.unit.errors %}
+            <div class="rw-field-error">{{ form.unit.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Start Date <span class="required">*</span></label>
+                {{ form.start_date }}
+                {% if form.start_date.errors %}
+                <div class="rw-field-error">{{ form.start_date.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Billing Day</label>
+                {{ form.billing_day }}
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Monthly Rent (KSh) <span class="required">*</span></label>
+                {{ form.monthly_rent }}
+                {% if form.monthly_rent.errors %}
+                <div class="rw-field-error">{{ form.monthly_rent.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Required Deposit (KSh)</label>
+                {{ form.required_deposit }}
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button type="submit" class="rw-btn rw-btn-primary">
+              <i class="fa fa-save"></i> {{ action }}
+            </button>
+            <a href="{% url 'tenancies:list' %}" class="rw-btn rw-btn-ghost">Cancel</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Generate Rent{% endblock %}
+{% block page_title %}Generate Rent{% endblock %}
+{% block nav_payments %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'finance:payment_list' %}">Payments</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  Generate Rent
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">Generate Rent Charges</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-6">
+    <div class="rw-card">
+      <div class="rw-card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Month</label>
+                {{ form.month }}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Year</label>
+                {{ form.year }}
+              </div>
+            </div>
+          </div>
+          <div class="rw-alert rw-alert-info">
+            <i class="fa fa-circle-info"></i>
+            Creates one rent charge per active tenancy for the chosen month.
+            Safe to run again — existing charges are skipped.
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="rw-btn rw-btn-primary"><i class="fa fa-calendar-plus"></i> Generate</button>
+            <a href="{% url 'finance:payment_list' %}" class="rw-btn rw-btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

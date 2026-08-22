@@ -1,0 +1,44 @@
+{% comment %}Thermal receipt styles — shared by preview, print page and PDF.{% endcomment %}
+<style>
+  .rcpt {
+    font-family: 'Courier New', ui-monospace, monospace;
+    color: #000;
+    background: #fff;
+    padding: 10px 12px;
+    margin: 0 auto;
+    line-height: 1.45;
+  }
+  /* Widths match the physical paper */
+  .rcpt-MM80   { width: 80mm;  font-size: 12px; }
+  .rcpt-MM58   { width: 58mm;  font-size: 10.5px; }
+  .rcpt-MOBILE { width: 100%; max-width: 420px; font-size: 13px; }
+
+  .rcpt-head { text-align: center; }
+  .rcpt-logo { max-height: 46px; max-width: 70%; margin-bottom: 6px; }
+  .rcpt-agency { font-size: 1.25em; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+  .rcpt-sub { font-size: .82em; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
+  .rcpt-meta { font-size: .82em; }
+
+  .rcpt-rule { border-top: 1px dashed #000; margin: 8px 0; }
+
+  .rcpt-title { text-align: center; font-weight: 700; letter-spacing: .5px; }
+
+  .rcpt-rows { width: 100%; border-collapse: collapse; }
+  .rcpt-rows td { padding: 2px 0; vertical-align: top; }
+  .rcpt-rows td:first-child { width: 42%; }
+  .rcpt-rows td:last-child { text-align: right; font-weight: 700; word-break: break-word; }
+
+  .rcpt-amount {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 1.15em; font-weight: 700; margin: 4px 0;
+  }
+  .rcpt-status { text-align: center; font-weight: 700; letter-spacing: 1px; margin-top: 4px; }
+  .rcpt-foot { text-align: center; font-size: .85em; }
+
+  @media print {
+    @page { margin: 0; }
+    body { margin: 0; background: #fff; }
+    .rcpt-noprint { display: none !important; }
+    .rcpt { padding: 4mm; }
+  }
+</style>

@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block nav_properties %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'properties:list' %}">Properties</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  <a href="{% url 'properties:detail' prop.pk %}">{{ prop.name }}</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  {{ page_title }}
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">{{ page_title }}</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-6">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Unit Details</h2>
+      </div>
+      <div class="rw-card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Unit Number <span class="required">*</span></label>
+                {{ form.unit_number }}
+                {% if form.unit_number.errors %}
+                <div class="rw-field-error">{{ form.unit_number.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Floor</label>
+                {{ form.floor }}
+              </div>
+            </div>
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">House Type</label>
+            {{ form.house_type }}
+          </div>
+
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Rent Amount (KSh) <span class="required">*</span></label>
+                {{ form.rent_amount }}
+                {% if form.rent_amount.errors %}
+                <div class="rw-field-error">{{ form.rent_amount.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Deposit Amount (KSh)</label>
+                {{ form.deposit_amount }}
+              </div>
+            </div>
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Status</label>
+            {{ form.status }}
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Description</label>
+            {{ form.description }}
+          </div>
+
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="rw-btn rw-btn-primary">
+              <i class="fa fa-save"></i> {{ action }}
+            </button>
+            <a href="{% url 'properties:detail' prop.pk %}" class="rw-btn rw-btn-ghost">
+              Cancel
+            </a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

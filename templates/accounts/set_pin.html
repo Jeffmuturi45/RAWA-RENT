@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Financial PIN{% endblock %}
+{% block page_title %}Financial PIN{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">Financial PIN</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-6">
+    <div class="rw-card">
+      <div class="rw-card-body">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
+          A short PIN used to authorize sensitive financial actions.
+        </p>
+        <form method="post" action="{% url 'accounts:set_financial_pin' %}" novalidate>
+          {% csrf_token %}
+
+          {% if pin_form.non_field_errors %}
+          <div class="rw-alert rw-alert-danger">
+            <i class="fa fa-circle-exclamation"></i> {{ pin_form.non_field_errors.0 }}
+          </div>
+          {% endif %}
+
+          <div class="rw-form-group">
+            <label class="rw-label">PIN (4–6 digits) <span class="required">*</span></label>
+            {{ pin_form.pin }}
+            {% if pin_form.pin.errors %}<div class="rw-field-error">{{ pin_form.pin.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="rw-form-group">
+            <label class="rw-label">Confirm PIN <span class="required">*</span></label>
+            {{ pin_form.confirm_pin }}
+            {% if pin_form.confirm_pin.errors %}<div class="rw-field-error">{{ pin_form.confirm_pin.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="rw-btn rw-btn-primary"><i class="fa fa-shield-halved"></i> Save PIN</button>
+            <a href="{% url 'accounts:profile' %}" class="rw-btn rw-btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

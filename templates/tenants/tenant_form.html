@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block nav_tenants %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'tenants:list' %}">Tenants</a>
+  {% if tenant %}
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  <a href="{% url 'tenants:detail' tenant.pk %}">{{ tenant.full_name }}</a>
+  {% endif %}
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  {{ page_title }}
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">{{ page_title }}</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-8">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <!-- Identity -->
+      <div class="rw-card mb-3">
+        <div class="rw-card-header">
+          <h2 class="rw-card-title">Tenant Details</h2>
+        </div>
+        <div class="rw-card-body">
+          <div class="row">
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Full Name <span class="required">*</span></label>
+                {{ form.full_name }}
+                {% if form.full_name.errors %}
+                <div class="rw-field-error">{{ form.full_name.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Phone <span class="required">*</span></label>
+                {{ form.phone }}
+                {% if form.phone.errors %}
+                <div class="rw-field-error">{{ form.phone.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <div class="rw-field-error">{{ form.email.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-12 col-md-3">
+              <div class="rw-form-group">
+                <label class="rw-label">National ID</label>
+                {{ form.national_id }}
+              </div>
+            </div>
+            <div class="col-12 col-md-3">
+              <div class="rw-form-group">
+                <label class="rw-label">Date of Birth</label>
+                {{ form.date_of_birth }}
+              </div>
+            </div>
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Address</label>
+            {{ form.address }}
+          </div>
+
+          <div class="row">
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Status</label>
+                {{ form.status }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Contact -->
+      <div class="rw-card mb-3">
+        <div class="rw-card-header">
+          <h2 class="rw-card-title">Emergency Contact</h2>
+        </div>
+        <div class="rw-card-body">
+          <div class="row">
+            <div class="col-12 col-md-5">
+              <div class="rw-form-group">
+                <label class="rw-label">Name</label>
+                {{ form.emergency_contact }}
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="rw-form-group">
+                <label class="rw-label">Phone</label>
+                {{ form.emergency_phone }}
+              </div>
+            </div>
+            <div class="col-12 col-md-3">
+              <div class="rw-form-group">
+                <label class="rw-label">Relation</label>
+                {{ form.emergency_relation }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="rw-card mb-3">
+        <div class="rw-card-header">
+          <h2 class="rw-card-title">Notes</h2>
+        </div>
+        <div class="rw-card-body">
+          <div class="rw-form-group">
+            {{ form.notes }}
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="rw-btn rw-btn-primary">
+          <i class="fa fa-save"></i> {{ action }}
+        </button>
+        {% if tenant %}
+        <a href="{% url 'tenants:detail' tenant.pk %}" class="rw-btn rw-btn-ghost">Cancel</a>
+        {% else %}
+        <a href="{% url 'tenants:list' %}" class="rw-btn rw-btn-ghost">Cancel</a>
+        {% endif %}
+      </div>
+
+    </form>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Unit {{ unit.unit_number }}{% endblock %}
+{% block page_title %}Unit {{ unit.unit_number }}{% endblock %}
+{% block nav_properties %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'properties:list' %}">Properties</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  <a href="{% url 'properties:detail' prop.pk %}">{{ prop.name }}</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  Unit {{ unit.unit_number }}
+</div>
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Unit {{ unit.unit_number }}</h1>
+    <p class="rw-page-subtitle">{{ prop.name }} · {{ unit.house_type.name|default:"No type assigned" }}</p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    {% if not active_tenancy %}
+    <a href="{% url 'tenancies:create' %}?unit={{ unit.pk }}" class="rw-btn rw-btn-outline">
+      <i class="fa fa-house-user"></i> Assign Tenant
+    </a>
+    {% endif %}
+    <a href="{% url 'properties:unit_edit' unit.pk %}" class="rw-btn rw-btn-primary">
+      <i class="fa fa-pen"></i> Edit Unit
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- Unit Info -->
+  <div class="col-12 col-lg-4">
+    <div class="rw-card mb-3">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Unit Information</h2>
+        <span class="rw-badge {{ unit.get_status_badge }}">
+          {{ unit.get_status_display }}
+        </span>
+      </div>
+      <div class="rw-card-body">
+        <table style="width:100%;font-size:13px;">
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;width:45%;">Unit Number</td>
+            <td style="font-weight:700;font-size:15px;">{{ unit.unit_number }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">House Type</td>
+            <td>{{ unit.house_type.name|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Floor</td>
+            <td>{{ unit.floor|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Rent</td>
+            <td style="font-weight:600;">KSh {{ unit.rent_amount|floatformat:0 }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Deposit</td>
+            <td style="font-weight:600;">KSh {{ unit.deposit_amount|floatformat:0 }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Active Tenancy -->
+    {% if active_tenancy %}
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Current Tenant</h2>
+        <span class="rw-badge rw-badge-success">Active</span>
+      </div>
+      <div class="rw-card-body">
+        <div style="font-weight:700;font-size:15px;margin-bottom:4px;">
+          <a href="{% url 'tenants:detail' active_tenancy.tenant.pk %}" style="color:var(--brand-primary);">
+            {{ active_tenancy.tenant.full_name }}
+          </a>
+        </div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+          {{ active_tenancy.tenant.tenant_number }}
+        </div>
+        <table style="width:100%;font-size:13px;">
+          <tr>
+            <td style="color:var(--text-secondary);padding:4px 0;">Phone</td>
+            <td>{{ active_tenancy.tenant.phone }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:4px 0;">Since</td>
+            <td>{{ active_tenancy.start_date }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:4px 0;">Monthly Rent</td>
+            <td style="font-weight:600;">KSh {{ active_tenancy.monthly_rent|floatformat:0 }}</td>
+          </tr>
+        </table>
+        {% if caps.view_finance %}
+        <a href="{% url 'finance:tenant_statement' active_tenancy.pk %}"
+           class="rw-btn rw-btn-ghost rw-btn-sm w-100 justify-content-center mt-2">
+          <i class="fa fa-book me-1"></i> View Statement
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="rw-card">
+      <div class="rw-card-body">
+        <div class="rw-empty" style="padding:24px;">
+          <div class="rw-empty-icon"><i class="fa fa-user-slash"></i></div>
+          <div class="rw-empty-title">Vacant</div>
+          <div class="rw-empty-text">No active tenant.</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Tenancy History -->
+  <div class="col-12 col-lg-8">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title"><i class="fa fa-clock-rotate-left me-2"></i>Tenancy History</h2>
+      </div>
+      <div class="rw-table-wrapper">
+        {% if tenancies %}
+        <table class="rw-table">
+          <thead>
+            <tr>
+              <th>Tenant</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Monthly Rent</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in tenancies %}
+            <tr>
+              <td>
+                <div style="font-weight:600;">{{ t.tenant.full_name }}</div>
+                <div style="font-size:12px;color:var(--text-secondary);">
+                  {{ t.tenant.tenant_number }}
+                </div>
+              </td>
+              <td>{{ t.start_date }}</td>
+              <td>{{ t.end_date|default:"Present" }}</td>
+              <td class="rw-table-amount">KSh {{ t.monthly_rent|floatformat:0 }}</td>
+              <td>
+                <span class="rw-badge {{ t.get_status_badge }}">
+                  {{ t.get_status_display }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="rw-empty">
+          <div class="rw-empty-icon"><i class="fa fa-clock-rotate-left"></i></div>
+          <div class="rw-empty-title">No tenancy history</div>
+          <div class="rw-empty-text">This unit has not been occupied yet.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

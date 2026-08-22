@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Payments{% endblock %}
+{% block page_title %}Payments{% endblock %}
+{% block nav_payments %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Payments</h1>
+    <p class="rw-page-subtitle">{{ total }} payment{{ total|pluralize }} recorded</p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    {% if caps.manage_finance %}
+    <a href="{% url 'finance:generate_rent' %}" class="rw-btn rw-btn-outline">
+      <i class="fa fa-calendar-plus"></i> Generate Rent
+    </a>
+    <a href="{% url 'finance:payment_record' %}" class="rw-btn rw-btn-primary">
+      <i class="fa fa-plus"></i> Record Payment
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="mb-4">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <input type="text" name="q" value="{{ query }}" class="rw-input"
+           placeholder="Search tenant or reference..." style="max-width:260px;" />
+    <select name="method" class="rw-select" style="max-width:180px;">
+      <option value="">All methods</option>
+      {% for value, label in method_choices %}
+      <option value="{{ value }}" {% if selected_method == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="rw-btn rw-btn-outline"><i class="fa fa-filter"></i> Filter</button>
+    {% if query or selected_method %}
+    <a href="{% url 'finance:payment_list' %}" class="rw-btn rw-btn-ghost">Clear</a>
+    {% endif %}
+  </div>
+</form>
+
+<div class="rw-card">
+  <div class="rw-table-wrapper">
+    {% if payments %}
+    <table class="rw-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Tenant</th>
+          <th>Unit</th>
+          <th>Method</th>
+          <th>Reference</th>
+          <th>Amount</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td>{{ p.payment_date }}</td>
+          <td>
+            <a href="{% url 'finance:payment_detail' p.pk %}" style="font-weight:600;color:var(--brand-primary);">
+              {{ p.tenant.full_name }}
+            </a>
+          </td>
+          <td style="font-size:13px;">
+            {% if p.tenancy %}{{ p.tenancy.unit.prop.name }} · {{ p.tenancy.unit.unit_number }}{% else %}—{% endif %}
+          </td>
+          <td>{{ p.get_method_display }}</td>
+          <td style="font-family:monospace;font-size:12px;">{{ p.reference|default:"—" }}</td>
+          <td class="rw-table-amount">KSh {{ p.amount|floatformat:0 }}</td>
+          <td><span class="rw-badge {{ p.get_status_badge }}">{{ p.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-money-bill-wave"></i></div>
+      <div class="rw-empty-title">No payments yet</div>
+      <div class="rw-empty-text">
+        {% if query or selected_method %}No payments match your filters.
+        {% else %}Record a payment to get started.{% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

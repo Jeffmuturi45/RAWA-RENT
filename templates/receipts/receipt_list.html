@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Receipts{% endblock %}
+{% block page_title %}Receipts{% endblock %}
+{% block nav_receipts %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Receipts</h1>
+    <p class="rw-page-subtitle">{{ total }} receipt{{ total|pluralize }} issued</p>
+  </div>
+</div>
+
+{% if not pdf_available %}
+<div class="rw-alert rw-alert-info">
+  <i class="fa fa-circle-info"></i>
+  PDF export is unavailable on this server (WeasyPrint native libraries not installed).
+  Receipts open as print-ready pages — use <strong>Print</strong> or <em>Save as PDF</em>.
+</div>
+{% endif %}
+
+<div class="rw-card">
+  <div class="rw-table-wrapper">
+    {% if receipts %}
+    <table class="rw-table">
+      <thead>
+        <tr>
+          <th>Receipt No</th>
+          <th>Tenant</th>
+          <th>Unit</th>
+          <th style="text-align:right;">Amount</th>
+          <th>Issued</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rc in receipts %}
+        <tr>
+          <td style="font-family:monospace;font-weight:600;">{{ rc.receipt_number }}</td>
+          <td>{{ rc.payment.tenant.full_name }}</td>
+          <td style="font-size:13px;">
+            {% if rc.payment.tenancy %}{{ rc.payment.tenancy.unit.prop.name }} · {{ rc.payment.tenancy.unit.unit_number }}{% else %}—{% endif %}
+          </td>
+          <td class="rw-table-amount">KSh {{ rc.payment.amount|floatformat:0 }}</td>
+          <td>{{ rc.issued_at|date:"d M Y" }}</td>
+          <td style="white-space:nowrap;">
+            <a href="{% url 'receipts:detail' rc.pk %}" class="rw-btn rw-btn-ghost rw-btn-sm" title="View / print">
+              <i class="fa fa-print"></i>
+            </a>
+            {% if pdf_available %}
+            <a href="{% url 'receipts:pdf' rc.pk %}" class="rw-btn rw-btn-ghost rw-btn-sm" title="Download PDF">
+              <i class="fa fa-file-pdf"></i>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-receipt"></i></div>
+      <div class="rw-empty-title">No receipts yet</div>
+      <div class="rw-empty-text">Receipts are issued from verified payments.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

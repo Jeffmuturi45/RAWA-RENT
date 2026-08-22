@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Units{% endblock %}
+{% block page_title %}Units{% endblock %}
+{% block nav_units %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Units</h1>
+    <p class="rw-page-subtitle">{{ total }} unit{{ total|pluralize }} across all properties</p>
+  </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="mb-4">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <input
+      type="text"
+      name="q"
+      value="{{ query }}"
+      class="rw-input"
+      placeholder="Search unit or property..."
+      style="max-width:260px;"
+    />
+
+    <select name="status" class="rw-select" style="max-width:190px;">
+      <option value="">All statuses</option>
+      {% for value, label in status_choices %}
+      <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="property" class="rw-select" style="max-width:220px;">
+      <option value="">All properties</option>
+      {% for p in properties %}
+      <option value="{{ p.pk }}" {% if selected_property == p.pk|stringformat:'s' %}selected{% endif %}>{{ p.name }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="submit" class="rw-btn rw-btn-outline">
+      <i class="fa fa-filter"></i> Filter
+    </button>
+    {% if query or selected_status or selected_property %}
+    <a href="{% url 'properties:unit_list' %}" class="rw-btn rw-btn-ghost">Clear</a>
+    {% endif %}
+  </div>
+</form>
+
+<div class="rw-card">
+  <div class="rw-table-wrapper">
+    {% if units %}
+    <table class="rw-table">
+      <thead>
+        <tr>
+          <th>Unit</th>
+          <th>Property</th>
+          <th>Type</th>
+          <th>Floor</th>
+          <th>Rent (KSh)</th>
+          <th>Status</th>
+          <th>Tenant</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for unit in units %}
+        <tr>
+          <td>
+            <a href="{% url 'properties:unit_detail' unit.pk %}"
+               style="font-weight:600;color:var(--brand-primary);">
+              {{ unit.unit_number }}
+            </a>
+          </td>
+          <td>
+            <a href="{% url 'properties:detail' unit.prop.pk %}" style="font-size:13px;">
+              {{ unit.prop.name }}
+            </a>
+          </td>
+          <td>{{ unit.house_type.name|default:"—" }}</td>
+          <td>{{ unit.floor|default:"—" }}</td>
+          <td class="rw-table-amount">{{ unit.rent_amount|floatformat:0 }}</td>
+          <td>
+            <span class="rw-badge {{ unit.get_status_badge }}">
+              {{ unit.get_status_display }}
+            </span>
+          </td>
+          <td>
+            {% if unit.tenant %}
+              <a href="{% url 'tenants:detail' unit.tenant.pk %}" style="font-size:13px;">
+                {{ unit.tenant.full_name }}
+              </a>
+            {% else %}
+              <span style="color:var(--text-secondary);font-size:13px;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'properties:unit_edit' unit.pk %}"
+               class="rw-btn rw-btn-ghost rw-btn-sm">
+              <i class="fa fa-pen"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-door-open"></i></div>
+      <div class="rw-empty-title">No units found</div>
+      <div class="rw-empty-text">
+        {% if query or selected_status or selected_property %}
+          No units match your filters.
+        {% else %}
+          Add units from a property page to see them here.
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

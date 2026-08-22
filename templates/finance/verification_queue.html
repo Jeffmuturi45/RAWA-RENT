@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Pending Verification{% endblock %}
+{% block page_title %}Pending Verification{% endblock %}
+{% block nav_payments %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Pending Verification</h1>
+    <p class="rw-page-subtitle">
+      {{ total }} payment claim{{ total|pluralize }} awaiting verification —
+      these do <strong>not</strong> affect the ledger yet
+    </p>
+  </div>
+  {% if caps.record_payment %}
+  <a href="{% url 'finance:payment_record' %}" class="rw-btn rw-btn-primary">
+    <i class="fa fa-plus"></i> Record Payment
+  </a>
+  {% endif %}
+</div>
+
+<div class="rw-alert rw-alert-info">
+  <i class="fa fa-shield-halved"></i>
+  Check each claim against the actual M-Pesa statement before verifying.
+  You cannot verify a claim you recorded yourself.
+</div>
+
+<div class="rw-card">
+  <div class="rw-table-wrapper">
+    {% if claims %}
+    <table class="rw-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Tenant</th>
+          <th>Unit</th>
+          <th>Method</th>
+          <th>Reference</th>
+          <th style="text-align:right;">Amount</th>
+          <th>Claimed by</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in claims %}
+        <tr>
+          <td>{{ p.payment_date }}</td>
+          <td>
+            <a href="{% url 'finance:payment_detail' p.pk %}" style="font-weight:600;color:var(--brand-primary);">
+              {{ p.tenant.full_name }}
+            </a>
+          </td>
+          <td style="font-size:13px;">
+            {% if p.tenancy %}{{ p.tenancy.unit.prop.name }} · {{ p.tenancy.unit.unit_number }}{% else %}—{% endif %}
+          </td>
+          <td>{{ p.get_method_display }}</td>
+          <td style="font-family:monospace;font-size:12px;">{{ p.reference|default:"—" }}</td>
+          <td class="rw-table-amount">KSh {{ p.amount|floatformat:0 }}</td>
+          <td style="font-size:13px;">{{ p.created_by.full_name|default:"—" }}</td>
+          <td style="white-space:nowrap;">
+            {% if caps.verify_payment %}
+              {% if p.created_by_id == request.user.pk %}
+                <span class="rw-badge rw-badge-dark" title="You recorded this claim">Your claim</span>
+              {% else %}
+                <a href="{% url 'finance:payment_verify' p.pk %}" class="rw-btn rw-btn-primary rw-btn-sm">
+                  <i class="fa fa-check"></i> Verify
+                </a>
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-circle-check"></i></div>
+      <div class="rw-empty-title">Nothing pending</div>
+      <div class="rw-empty-text">All payment claims have been verified.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

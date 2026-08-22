@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block nav_settings %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  .rw-tabs { display:flex; gap:4px; border-bottom:1px solid var(--border); margin-bottom:20px; flex-wrap:wrap; }
+  .rw-tab {
+    padding:10px 16px; font-size:13.5px; font-weight:600; color:var(--text-secondary);
+    border-bottom:2px solid transparent; cursor:pointer; background:none; border-top:none;
+    border-left:none; border-right:none;
+  }
+  .rw-tab:hover { color:var(--brand-primary); }
+  .rw-tab.active { color:var(--brand-primary); border-bottom-color:var(--brand-primary); }
+  .rw-color-input { width:100%; height:38px; padding:2px; border:1px solid var(--border);
+                    border-radius:var(--radius-sm); background:var(--white); cursor:pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Settings</h1>
+    <p class="rw-page-subtitle">Agency profile, branding and system configuration</p>
+  </div>
+  <a href="{% url 'organizations:receipt_preview' %}" class="rw-btn rw-btn-outline">
+    <i class="fa fa-receipt"></i> Receipt Preview
+  </a>
+</div>
+
+<!-- Tabs -->
+<div class="rw-tabs">
+  <a href="?tab=agency"   class="rw-tab {% if active_tab == 'agency' %}active{% endif %}">
+    <i class="fa fa-building me-1"></i> Agency
+  </a>
+  <a href="?tab=branding" class="rw-tab {% if active_tab == 'branding' %}active{% endif %}">
+    <i class="fa fa-palette me-1"></i> Branding &amp; Theme
+  </a>
+  <a href="?tab=system"   class="rw-tab {% if active_tab == 'system' %}active{% endif %}">
+    <i class="fa fa-gear me-1"></i> System
+  </a>
+</div>
+
+{# ─── AGENCY ─────────────────────────────── #}
+{% if active_tab == 'agency' %}
+<div class="row">
+  <div class="col-12 col-lg-8">
+    <div class="rw-card">
+      <div class="rw-card-header"><h2 class="rw-card-title">Agency Profile</h2></div>
+      <div class="rw-card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="section" value="agency" />
+
+          <div class="row">
+            <div class="col-12 col-md-8">
+              <div class="rw-form-group">
+                <label class="rw-label">Agency Name <span class="required">*</span></label>
+                {{ agency_form.name }}
+                {% if agency_form.name.errors %}<div class="rw-field-error">{{ agency_form.name.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="rw-form-group">
+                <label class="rw-label">Registration No.</label>
+                {{ agency_form.registration_no }}
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-12 col-md-4">
+              <div class="rw-form-group">
+                <label class="rw-label">Phone</label>
+                {{ agency_form.phone }}
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="rw-form-group">
+                <label class="rw-label">Email</label>
+                {{ agency_form.email }}
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="rw-form-group">
+                <label class="rw-label">Website</label>
+                {{ agency_form.website }}
+              </div>
+            </div>
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Address</label>
+            {{ agency_form.address }}
+            <div class="rw-field-help">Shown on receipts.</div>
+          </div>
+
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">City</label>
+                {{ agency_form.city }}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Country</label>
+                {{ agency_form.country }}
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="rw-btn rw-btn-primary"><i class="fa fa-save"></i> Save Agency Profile</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ─── BRANDING & THEME ───────────────────── #}
+{% if active_tab == 'branding' %}
+<div class="row g-3">
+  <div class="col-12 col-lg-8">
+    <div class="rw-card">
+      <div class="rw-card-header"><h2 class="rw-card-title">Branding &amp; Theme</h2></div>
+      <div class="rw-card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="section" value="branding" />
+
+          <div class="row">
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Logo</label>
+                {% if org.logo %}
+                <div style="margin-bottom:8px;">
+                  <img src="{{ org.logo.url }}" alt="Logo" style="height:48px;border-radius:4px;" />
+                </div>
+                {% endif %}
+                {{ branding_form.logo }}
+              </div>
+            </div>
+            <div class="col-12 col-md-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Favicon</label>
+                {{ branding_form.favicon }}
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-12 col-md-8">
+              <div class="rw-form-group">
+                <label class="rw-label">Receipt Footer Text</label>
+                {{ branding_form.footer_text }}
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="rw-form-group">
+                <label class="rw-label">Receipt Size</label>
+                {{ branding_form.receipt_size }}
+              </div>
+            </div>
+          </div>
+
+          <hr style="border-color:var(--border);margin:20px 0 16px;" />
+          <div style="font-size:13px;font-weight:600;color:var(--brand-dark);margin-bottom:12px;">
+            Theme Palette
+          </div>
+
+          <div class="row g-2">
+            {% for field in theme_fields %}
+            <div class="col-6 col-md-4 col-lg-3">
+              <div class="rw-form-group">
+                <label class="rw-label" style="font-size:11.5px;">{{ field.label }}</label>
+                {{ field }}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <button type="submit" class="rw-btn rw-btn-primary mt-2">
+            <i class="fa fa-save"></i> Save Branding
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="rw-alert rw-alert-info">
+      <i class="fa fa-circle-info"></i>
+      Theme colours apply across the whole app immediately after saving.
+      Use <strong>Receipt Preview</strong> to check how receipts will print.
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ─── SYSTEM ─────────────────────────────── #}
+{% if active_tab == 'system' %}
+<div class="row">
+  <div class="col-12 col-lg-6">
+    <div class="rw-card">
+      <div class="rw-card-header"><h2 class="rw-card-title">System</h2></div>
+      <div class="rw-card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="section" value="system" />
+
+          <div class="rw-form-group">
+            <label class="rw-label">Cutover Date</label>
+            {{ system_form.cutover_date }}
+            <div class="rw-field-help">
+              Records before this date are historical/opening data; everything after is managed in RawaRent.
+            </div>
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Agency Status</label>
+            {{ system_form.status }}
+          </div>
+
+          <button type="submit" class="rw-btn rw-btn-primary"><i class="fa fa-save"></i> Save System Settings</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

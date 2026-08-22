@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Properties{% endblock %}
+{% block page_title %}Properties{% endblock %}
+{% block nav_properties %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Properties</h1>
+    <p class="rw-page-subtitle">{{ total }} propert{{ total|pluralize:"y,ies" }} under management</p>
+  </div>
+  <a href="{% url 'properties:create' %}" class="rw-btn rw-btn-primary">
+    <i class="fa fa-plus"></i> Add Property
+  </a>
+</div>
+
+<!-- Search -->
+<form method="get" class="mb-4">
+  <div style="display:flex;gap:8px;max-width:400px;">
+    <input
+      type="text"
+      name="q"
+      value="{{ query }}"
+      class="rw-input"
+      placeholder="Search properties..."
+    />
+    <button type="submit" class="rw-btn rw-btn-outline">
+      <i class="fa fa-search"></i>
+    </button>
+    {% if query %}
+    <a href="{% url 'properties:list' %}" class="rw-btn rw-btn-ghost">Clear</a>
+    {% endif %}
+  </div>
+</form>
+
+{% if properties %}
+<div class="row g-3">
+  {% for prop in properties %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="rw-card h-100">
+
+      {% if prop.image %}
+      <img src="{{ prop.image.url }}"
+           alt="{{ prop.name }}"
+           style="width:100%;height:140px;object-fit:cover;" />
+      {% else %}
+      <div style="width:100%;height:140px;background:linear-gradient(135deg,
+                  var(--brand-primary),var(--brand-accent));
+                  display:flex;align-items:center;justify-content:center;">
+        <i class="fa fa-building" style="font-size:40px;color:rgba(255,255,255,0.3);"></i>
+      </div>
+      {% endif %}
+
+      <div class="rw-card-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <h3 style="font-size:16px;font-weight:700;color:var(--brand-dark);margin:0;">
+              {{ prop.name }}
+            </h3>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">
+              <i class="fa fa-location-dot me-1"></i>{{ prop.city }}
+              &nbsp;·&nbsp;
+              <span style="font-family:monospace;font-weight:600;">{{ prop.code }}</span>
+            </div>
+          </div>
+          <span class="rw-badge {% if prop.status == 'ACTIVE' %}rw-badge-success{% else %}rw-badge-dark{% endif %}">
+            {{ prop.status }}
+          </span>
+        </div>
+
+        <!-- Unit Stats -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);
+                    gap:8px;margin:12px 0;padding:12px;
+                    background:var(--brand-light);border-radius:var(--radius-sm);">
+          <div style="text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:var(--brand-dark);">
+              {{ prop.unit_count }}
+            </div>
+            <div style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Total</div>
+          </div>
+          <div style="text-align:center;border-left:1px solid var(--border);border-right:1px solid var(--border);">
+            <div style="font-size:18px;font-weight:700;color:var(--success);">
+              {{ prop.occupied_count }}
+            </div>
+            <div style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Occupied</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:18px;font-weight:700;color:var(--warning);">
+              {{ prop.vacant_count }}
+            </div>
+            <div style="font-size:10px;color:var(--text-secondary);text-transform:uppercase;">Vacant</div>
+          </div>
+        </div>
+
+        <!-- Occupancy Bar -->
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;
+                      font-size:11px;color:var(--text-secondary);margin-bottom:4px;">
+            <span>Occupancy Rate</span>
+            <span style="font-weight:600;color:var(--brand-dark);">{{ prop.occupancy }}%</span>
+          </div>
+          <div style="background:var(--border);border-radius:4px;height:6px;">
+            <div style="background:var(--success);height:6px;border-radius:4px;
+                        width:{{ prop.occupancy }}%;transition:width 0.3s;"></div>
+          </div>
+        </div>
+
+        <a href="{% url 'properties:detail' prop.pk %}" class="rw-btn rw-btn-outline w-100 justify-content-center">
+          View Property <i class="fa fa-arrow-right ms-1"></i>
+        </a>
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="rw-card">
+  <div class="rw-empty">
+    <div class="rw-empty-icon"><i class="fa fa-building"></i></div>
+    <div class="rw-empty-title">No properties found</div>
+    <div class="rw-empty-text">
+      {% if query %}
+        No properties match "{{ query }}".
+      {% else %}
+        Get started by adding your first property.
+      {% endif %}
+    </div>
+    {% if not query %}
+    <a href="{% url 'properties:create' %}" class="rw-btn rw-btn-primary">
+      <i class="fa fa-plus"></i> Add Property
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

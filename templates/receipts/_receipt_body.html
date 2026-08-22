@@ -1,0 +1,55 @@
+{% comment %}
+Shared thermal-receipt body. Renders from a whitelisted dict `r` so that
+sensitive fields (M-Pesa transaction code, payment UUID, staff IDs) are
+structurally unavailable here — spec §24.
+
+Expects:
+  org : Organization
+  r   : {receipt_number, tenant_name, property_name, unit_number,
+         issued_at, description, amount, method}
+{% endcomment %}
+
+<div class="rcpt rcpt-{{ org.receipt_size|default:'MM80' }}">
+
+  <div class="rcpt-head">
+    {% if org.logo %}
+    <img class="rcpt-logo" src="{{ org.logo.url }}" alt="" />
+    {% endif %}
+    <div class="rcpt-agency">{{ org.name|default:"RawaRent" }}</div>
+    <div class="rcpt-sub">Property Management</div>
+    {% if org.address %}<div class="rcpt-meta">{{ org.address }}</div>{% endif %}
+    {% if org.city %}<div class="rcpt-meta">{{ org.city }}{% if org.country %}, {{ org.country }}{% endif %}</div>{% endif %}
+    {% if org.phone %}<div class="rcpt-meta">Tel: {{ org.phone }}</div>{% endif %}
+    {% if org.email %}<div class="rcpt-meta">{{ org.email }}</div>{% endif %}
+  </div>
+
+  <div class="rcpt-rule"></div>
+  <div class="rcpt-title">RENT PAYMENT RECEIPT</div>
+  <div class="rcpt-rule"></div>
+
+  <table class="rcpt-rows">
+    <tr><td>Receipt No</td><td>{{ r.receipt_number }}</td></tr>
+    <tr><td>Tenant</td><td>{{ r.tenant_name }}</td></tr>
+    <tr><td>Property</td><td>{{ r.property_name }}</td></tr>
+    <tr><td>Unit</td><td>{{ r.unit_number }}</td></tr>
+    <tr><td>Date</td><td>{{ r.issued_at|date:"d M Y" }}</td></tr>
+    <tr><td>Description</td><td>{{ r.description }}</td></tr>
+    <tr><td>Method</td><td>{{ r.method }}</td></tr>
+  </table>
+
+  <div class="rcpt-rule"></div>
+
+  <div class="rcpt-amount">
+    <span>AMOUNT</span>
+    <strong>KSh {{ r.amount|floatformat:2 }}</strong>
+  </div>
+
+  <div class="rcpt-status">STATUS: PAID</div>
+
+  <div class="rcpt-rule"></div>
+
+  <div class="rcpt-foot">
+    {{ org.footer_text|default:"Thank you for your payment." }}
+  </div>
+
+</div>

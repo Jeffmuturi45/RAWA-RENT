@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment{% endblock %}
+{% block page_title %}Payment{% endblock %}
+{% block nav_payments %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'finance:payment_list' %}">Payments</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  {{ payment.tenant.full_name }}
+</div>
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">KSh {{ payment.amount|floatformat:0 }}</h1>
+    <p class="rw-page-subtitle">
+      {{ payment.get_method_display }} · {{ payment.payment_date }}
+      &nbsp;·&nbsp;<span class="rw-badge {{ payment.get_status_badge }}">{{ payment.get_status_display }}</span>
+    </p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    {% if payment.status == 'PENDING_VERIFICATION' and caps.verify_payment %}
+    <a href="{% url 'finance:payment_verify' payment.pk %}" class="rw-btn rw-btn-primary">
+      <i class="fa fa-circle-check"></i> Verify
+    </a>
+    <a href="{% url 'finance:payment_reject' payment.pk %}" class="rw-btn rw-btn-danger">
+      <i class="fa fa-ban"></i> Reject
+    </a>
+    {% endif %}
+    {% if payment.status == 'VERIFIED' %}
+      {% if payment.receipt %}
+      <a href="{% url 'receipts:detail' payment.receipt.pk %}" class="rw-btn rw-btn-outline">
+        <i class="fa fa-receipt"></i> View Receipt
+      </a>
+      {% else %}
+      <a href="{% url 'receipts:issue' payment.pk %}" class="rw-btn rw-btn-primary">
+        <i class="fa fa-receipt"></i> Issue Receipt
+      </a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+{% if payment.status == 'PENDING_VERIFICATION' %}
+<div class="rw-alert rw-alert-warning">
+  <i class="fa fa-hourglass-half"></i>
+  This claim is <strong>not yet verified</strong> — it has not been posted to the ledger
+  and does not reduce the tenant's arrears.
+</div>
+{% elif payment.status == 'REJECTED' %}
+<div class="rw-alert rw-alert-danger">
+  <i class="fa fa-ban"></i>
+  <strong>Rejected.</strong> {{ payment.rejection_reason }}
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-12 col-lg-5">
+    <div class="rw-card">
+      <div class="rw-card-header"><h2 class="rw-card-title">Payment Details</h2></div>
+      <div class="rw-card-body">
+        <table style="width:100%;font-size:13px;">
+          <tr><td style="color:var(--text-secondary);padding:5px 0;width:45%;">Tenant</td>
+              <td><a href="{% url 'tenants:detail' payment.tenant.pk %}">{{ payment.tenant.full_name }}</a></td></tr>
+          {% if payment.tenancy %}
+          <tr><td style="color:var(--text-secondary);padding:5px 0;">Unit</td>
+              <td>{{ payment.tenancy.unit.prop.name }} · {{ payment.tenancy.unit.unit_number }}</td></tr>
+          {% endif %}
+          <tr><td style="color:var(--text-secondary);padding:5px 0;">Method</td>
+              <td>{{ payment.get_method_display }}</td></tr>
+          <tr><td style="color:var(--text-secondary);padding:5px 0;">Reference</td>
+              <td style="font-family:monospace;">{{ payment.reference|default:"—" }}</td></tr>
+          <tr><td style="color:var(--text-secondary);padding:5px 0;">Recorded by</td>
+              <td>{{ payment.created_by.full_name|default:"—" }}</td></tr>
+          <tr><td style="color:var(--text-secondary);padding:5px 0;">Verified by</td>
+              <td>
+                {% if payment.verified_by %}
+                  {{ payment.verified_by.full_name }}
+                  <div style="font-size:11.5px;color:var(--text-secondary);">{{ payment.verified_at|date:"d M Y, H:i" }}</div>
+                {% else %}—{% endif %}
+              </td></tr>
+          <tr><td style="color:var(--text-secondary);padding:5px 0;">Allocated</td>
+              <td>KSh {{ payment.total_allocated|floatformat:0 }}</td></tr>
+          <tr><td style="color:var(--text-secondary);padding:5px 0;">On account (credit)</td>
+              <td>KSh {{ payment.unallocated|floatformat:0 }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-7">
+    <div class="rw-card mb-3">
+      <div class="rw-card-header"><h2 class="rw-card-title">Allocated To</h2></div>
+      <div class="rw-table-wrapper">
+        {% if allocations %}
+        <table class="rw-table">
+          <thead><tr><th>Charge</th><th>Due</th><th>Amount</th></tr></thead>
+          <tbody>
+            {% for a in allocations %}
+            <tr>
+              <td>{{ a.charge.description|default:a.charge.get_charge_type_display }}</td>
+              <td>{{ a.charge.due_date }}</td>
+              <td class="rw-table-amount">KSh {{ a.amount|floatformat:0 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="rw-empty" style="padding:24px;">
+          <div class="rw-empty-text">No charge allocations (held as credit).</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if deposit_movements %}
+    <div class="rw-card">
+      <div class="rw-card-header"><h2 class="rw-card-title">Deposit</h2></div>
+      <div class="rw-table-wrapper">
+        <table class="rw-table">
+          <thead><tr><th>Type</th><th>Amount</th></tr></thead>
+          <tbody>
+            {% for m in deposit_movements %}
+            <tr><td>{{ m.get_movement_type_display }}</td>
+                <td class="rw-table-amount">KSh {{ m.amount|floatformat:0 }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

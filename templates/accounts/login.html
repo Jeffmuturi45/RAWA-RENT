@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — RawaRent</title>
+
+  {% load static %}
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="{% static 'css/rawarent.css' %}" />
+
+  <style>
+    body {
+      background: var(--brand-dark);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 420px;
+      padding: 24px;
+    }
+
+    .login-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+
+    .login-header {
+      background: var(--brand-primary);
+      padding: 32px 32px 24px;
+      text-align: center;
+    }
+
+    .login-logo {
+      width: 56px;
+      height: 56px;
+      background: var(--brand-secondary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--brand-dark);
+      margin: 0 auto 16px;
+    }
+
+    .login-agency-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+
+    .login-agency-sub {
+      font-size: 12px;
+      color: var(--brand-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+    }
+
+    .login-body {
+      padding: 32px;
+    }
+
+    .login-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--brand-dark);
+      margin-bottom: 6px;
+    }
+
+    .login-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .login-footer {
+      padding: 16px 32px;
+      background: var(--brand-light);
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="login-wrapper">
+    <div class="login-card">
+
+      <!-- Header -->
+      <div class="login-header">
+        <div class="login-logo">R</div>
+        <div class="login-agency-name">Rawa Estates Agent</div>
+        <div class="login-agency-sub">Property Management</div>
+      </div>
+
+      <!-- Body -->
+      <div class="login-body">
+        <div class="login-title">Welcome back</div>
+        <div class="login-subtitle">Sign in to your account to continue</div>
+
+        {% if form.errors %}
+        <div class="rw-alert rw-alert-danger">
+          <i class="fa fa-circle-exclamation"></i>
+          Invalid email or password. Please try again.
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="rw-form-group">
+            <label class="rw-label" for="id_username">
+              Email Address <span class="required">*</span>
+            </label>
+            <input
+              type="email"
+              name="username"
+              id="id_username"
+              class="rw-input"
+              placeholder="you@rawaestates.co.ke"
+              autofocus
+              required
+            />
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label" for="id_password">
+              Password <span class="required">*</span>
+            </label>
+            <div style="position:relative;">
+              <input
+                type="password"
+                name="password"
+                id="id_password"
+                class="rw-input"
+                placeholder="Enter your password"
+                required
+                style="padding-right: 40px;"
+              />
+              <button
+                type="button"
+                onclick="togglePassword()"
+                style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+                       background:none;border:none;color:var(--text-secondary);cursor:pointer;">
+                <i class="fa fa-eye" id="toggleIcon"></i>
+              </button>
+            </div>
+          </div>
+
+          <input type="hidden" name="next" value="{{ next }}" />
+
+          <button type="submit" class="rw-btn rw-btn-primary w-100 justify-content-center mt-2">
+            <i class="fa fa-right-to-bracket"></i>
+            Sign In
+          </button>
+
+        </form>
+      </div>
+
+      <!-- Footer -->
+      <div class="login-footer">
+        RawaRent &copy; {% now "Y" %} &mdash; Rawa Estates Agent
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function togglePassword() {
+      const input = document.getElementById('id_password');
+      const icon  = document.getElementById('toggleIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+      }
+    }
+  </script>
+
+</body>
+</html>

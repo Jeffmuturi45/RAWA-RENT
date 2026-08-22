@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Receipt Preview{% endblock %}
+{% block page_title %}Receipt Preview{% endblock %}
+{% block nav_settings %}active{% endblock %}
+
+{% block extra_css %}{% include 'receipts/_receipt_styles.html' %}{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'organizations:settings' %}">Settings</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  Receipt Preview
+</div>
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Receipt Preview</h1>
+    <p class="rw-page-subtitle">
+      Sample data · size: <strong>{{ org.get_receipt_size_display }}</strong>
+    </p>
+  </div>
+  <a href="{% url 'organizations:settings' %}?tab=branding" class="rw-btn rw-btn-outline">
+    <i class="fa fa-palette"></i> Change Branding
+  </a>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-6">
+    <div class="rw-card">
+      <div class="rw-card-header"><h2 class="rw-card-title">Preview</h2></div>
+      <div class="rw-card-body" style="background:var(--brand-light);display:flex;justify-content:center;">
+        <div style="background:#fff;box-shadow:var(--shadow-md);">
+          {% include 'receipts/_receipt_body.html' with r=sample %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-6">
+    <div class="rw-alert rw-alert-info">
+      <i class="fa fa-circle-info"></i>
+      This is sample data. Real receipts are issued from a <strong>verified</strong> payment.
+    </div>
+    <div class="rw-alert rw-alert-warning">
+      <i class="fa fa-shield-halved"></i>
+      Receipts deliberately omit the M-Pesa transaction code and internal IDs.
+      Those stay visible only to authorised staff on the payment record.
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Access Denied{% endblock %}
+{% block page_title %}Access Denied{% endblock %}
+
+{% block content %}
+<div class="rw-card" style="max-width:520px;margin:40px auto;">
+  <div class="rw-empty" style="padding:40px 24px;">
+    <div class="rw-empty-icon" style="color:var(--danger);">
+      <i class="fa fa-lock"></i>
+    </div>
+    <div class="rw-empty-title">You don't have access to this page</div>
+    <div class="rw-empty-text">
+      Your role ({{ request.user.get_role_display }}) doesn't permit this action.
+      If you believe this is a mistake, contact your agency administrator.
+    </div>
+    <a href="{% url 'core:dashboard' %}" class="rw-btn rw-btn-primary">
+      <i class="fa fa-gauge-high"></i> Back to Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

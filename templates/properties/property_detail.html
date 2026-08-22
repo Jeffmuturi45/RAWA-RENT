@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ prop.name }}{% endblock %}
+{% block page_title %}{{ prop.name }}{% endblock %}
+{% block nav_properties %}active{% endblock %}
+
+{% block content %}
+
+<!-- Breadcrumb -->
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'properties:list' %}">Properties</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  {{ prop.name }}
+</div>
+
+<!-- Header -->
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">{{ prop.name }}</h1>
+    <p class="rw-page-subtitle">
+      <i class="fa fa-location-dot me-1"></i>{{ prop.city }}, {{ prop.county }}
+      &nbsp;·&nbsp;
+      <span style="font-family:monospace;font-weight:600;">{{ prop.code }}</span>
+    </p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{% url 'properties:house_type_create' prop.pk %}" class="rw-btn rw-btn-ghost">
+      <i class="fa fa-plus"></i> House Type
+    </a>
+    <a href="{% url 'properties:unit_create' prop.pk %}" class="rw-btn rw-btn-outline">
+      <i class="fa fa-plus"></i> Add Unit
+    </a>
+    <a href="{% url 'properties:edit' prop.pk %}" class="rw-btn rw-btn-primary">
+      <i class="fa fa-pen"></i> Edit
+    </a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon primary"><i class="fa fa-door-open"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Total Units</div>
+        <div class="rw-stat-value">{{ total_units }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon success"><i class="fa fa-circle-check"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Occupied</div>
+        <div class="rw-stat-value">{{ occupied }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon warning"><i class="fa fa-circle"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Vacant</div>
+        <div class="rw-stat-value">{{ vacant }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon info"><i class="fa fa-percent"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Occupancy</div>
+        <div class="rw-stat-value">{{ occupancy }}%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if caps.view_finance %}
+<!-- Finance summary (§34) -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon primary"><i class="fa fa-file-invoice-dollar"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Charged</div>
+        <div class="rw-stat-value">KSh {{ finance.expected|floatformat:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon success"><i class="fa fa-money-bill-wave"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Collected</div>
+        <div class="rw-stat-value">KSh {{ finance.collected|floatformat:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon danger"><i class="fa fa-triangle-exclamation"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Outstanding</div>
+        <div class="rw-stat-value">KSh {{ finance.outstanding|floatformat:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon secondary"><i class="fa fa-chart-line"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Collection Rate</div>
+        <div class="rw-stat-value">{{ finance.rate }}%</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+
+  <!-- Units Table -->
+  <div class="col-12 col-lg-8">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title"><i class="fa fa-door-open me-2"></i>Units</h2>
+        <a href="{% url 'properties:unit_create' prop.pk %}" class="rw-btn rw-btn-primary rw-btn-sm">
+          <i class="fa fa-plus"></i> Add Unit
+        </a>
+      </div>
+      <div class="rw-table-wrapper">
+        {% if units %}
+        <table class="rw-table">
+          <thead>
+            <tr>
+              <th>Unit</th>
+              <th>Type</th>
+              <th>Floor</th>
+              <th>Rent (KSh)</th>
+              <th>Status</th>
+              <th>Tenant</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for unit in units %}
+            <tr>
+              <td>
+                <a href="{% url 'properties:unit_detail' unit.pk %}"
+                   style="font-weight:600;color:var(--brand-primary);">
+                  {{ unit.unit_number }}
+                </a>
+              </td>
+              <td>{{ unit.house_type.name|default:"—" }}</td>
+              <td>{{ unit.floor|default:"—" }}</td>
+              <td class="rw-table-amount">{{ unit.rent_amount|floatformat:0 }}</td>
+              <td>
+                <span class="rw-badge {{ unit.get_status_badge }}">
+                  {{ unit.get_status_display }}
+                </span>
+              </td>
+              <td>
+                {% if unit.tenant %}
+                  <a href="{% url 'tenants:detail' unit.tenant.pk %}" style="font-size:13px;">{{ unit.tenant.full_name }}</a>
+                {% else %}
+                  <span style="color:var(--text-secondary);font-size:13px;">—</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'properties:unit_edit' unit.pk %}"
+                   class="rw-btn rw-btn-ghost rw-btn-sm">
+                  <i class="fa fa-pen"></i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="rw-empty">
+          <div class="rw-empty-icon"><i class="fa fa-door-open"></i></div>
+          <div class="rw-empty-title">No units yet</div>
+          <div class="rw-empty-text">Add units to start managing this property.</div>
+          <a href="{% url 'properties:unit_create' prop.pk %}" class="rw-btn rw-btn-primary">
+            <i class="fa fa-plus"></i> Add First Unit
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="col-12 col-lg-4">
+
+    <!-- House Types -->
+    <div class="rw-card mb-3">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title"><i class="fa fa-layer-group me-2"></i>House Types</h2>
+        <a href="{% url 'properties:house_type_create' prop.pk %}"
+           class="rw-btn rw-btn-ghost rw-btn-sm">
+          <i class="fa fa-plus"></i>
+        </a>
+      </div>
+      <div class="rw-card-body p-0">
+        {% if house_types %}
+        {% for ht in house_types %}
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);
+                    display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:600;font-size:13.5px;">{{ ht.name }}</div>
+            <div style="font-size:12px;color:var(--text-secondary);">
+              Rent: KSh {{ ht.default_rent|floatformat:0 }}
+              &nbsp;·&nbsp;
+              Deposit: KSh {{ ht.default_deposit|floatformat:0 }}
+            </div>
+          </div>
+          <a href="{% url 'properties:house_type_edit' ht.pk %}"
+             class="rw-btn rw-btn-ghost rw-btn-sm">
+            <i class="fa fa-pen"></i>
+          </a>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="rw-empty" style="padding:24px;">
+          <div class="rw-empty-text">No house types defined yet.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Property Info -->
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title"><i class="fa fa-info-circle me-2"></i>Details</h2>
+        <a href="{% url 'properties:edit' prop.pk %}" class="rw-btn rw-btn-ghost rw-btn-sm">
+          <i class="fa fa-pen"></i>
+        </a>
+      </div>
+      <div class="rw-card-body">
+        <table style="width:100%;font-size:13px;">
+          <tr>
+            <td style="color:var(--text-secondary);padding:4px 0;width:40%;">Code</td>
+            <td style="font-weight:600;font-family:monospace;">{{ prop.code }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:4px 0;">Address</td>
+            <td>{{ prop.address|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:4px 0;">City</td>
+            <td>{{ prop.city }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:4px 0;">County</td>
+            <td>{{ prop.county }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:4px 0;">Status</td>
+            <td>
+              <span class="rw-badge {% if prop.status == 'ACTIVE' %}rw-badge-success{% else %}rw-badge-dark{% endif %}">
+                {{ prop.status }}
+              </span>
+            </td>
+          </tr>
+        </table>
+        {% if prop.description %}
+        <hr style="border-color:var(--border);margin:12px 0;" />
+        <p style="font-size:13px;color:var(--text-secondary);margin:0;">{{ prop.description }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

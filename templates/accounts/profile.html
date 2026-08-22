@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">My Profile</h1>
+    <p class="rw-page-subtitle">
+      <span class="rw-badge rw-badge-info">{{ request.user.get_role_display }}</span>
+      &nbsp;·&nbsp;{{ request.user.email }}
+    </p>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- Profile details -->
+  <div class="col-12 col-lg-6">
+    <div class="rw-card mb-3">
+      <div class="rw-card-header"><h2 class="rw-card-title">Profile Details</h2></div>
+      <div class="rw-card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          <div class="rw-form-group">
+            <label class="rw-label">Full Name</label>
+            {{ form.full_name }}
+          </div>
+          <div class="rw-form-group">
+            <label class="rw-label">Phone</label>
+            {{ form.phone }}
+          </div>
+          <div class="rw-form-group">
+            <label class="rw-label">Avatar</label>
+            {{ form.avatar }}
+          </div>
+          <button type="submit" class="rw-btn rw-btn-primary"><i class="fa fa-save"></i> Save Profile</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Account info -->
+    <div class="rw-card">
+      <div class="rw-card-header"><h2 class="rw-card-title">Account</h2></div>
+      <div class="rw-card-body">
+        <table style="width:100%;font-size:13px;">
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;width:50%;">Role</td>
+            <td>{{ request.user.get_role_display }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Last login</td>
+            <td>{{ request.user.last_login|date:"d M Y, H:i"|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Password changed</td>
+            <td>{{ request.user.last_password_change|date:"d M Y, H:i"|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Financial PIN</td>
+            <td>
+              {% if request.user.has_financial_pin %}
+                <span class="rw-badge rw-badge-success">Set</span>
+              {% else %}
+                <span class="rw-badge rw-badge-warning">Not set</span>
+              {% endif %}
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Security -->
+  <div class="col-12 col-lg-6">
+    <!-- Change password -->
+    <div class="rw-card mb-3">
+      <div class="rw-card-header"><h2 class="rw-card-title">Change Password</h2></div>
+      <div class="rw-card-body">
+        <form method="post" action="{% url 'accounts:change_password' %}" novalidate>
+          {% csrf_token %}
+          <div class="rw-form-group">
+            <label class="rw-label">Current Password</label>
+            {{ password_form.old_password }}
+          </div>
+          <div class="rw-form-group">
+            <label class="rw-label">New Password</label>
+            {{ password_form.new_password1 }}
+          </div>
+          <div class="rw-form-group">
+            <label class="rw-label">Confirm New Password</label>
+            {{ password_form.new_password2 }}
+          </div>
+          <button type="submit" class="rw-btn rw-btn-primary"><i class="fa fa-lock"></i> Update Password</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Financial PIN -->
+    <div class="rw-card">
+      <div class="rw-card-header"><h2 class="rw-card-title">Financial PIN</h2></div>
+      <div class="rw-card-body">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+          A short PIN used to authorize sensitive financial actions.
+        </p>
+        <form method="post" action="{% url 'accounts:set_financial_pin' %}" novalidate>
+          {% csrf_token %}
+          <div class="rw-form-group">
+            <label class="rw-label">PIN (4–6 digits)</label>
+            {{ pin_form.pin }}
+          </div>
+          <div class="rw-form-group">
+            <label class="rw-label">Confirm PIN</label>
+            {{ pin_form.confirm_pin }}
+          </div>
+          <button type="submit" class="rw-btn rw-btn-outline">
+            <i class="fa fa-shield-halved"></i>
+            {% if request.user.has_financial_pin %}Change PIN{% else %}Set PIN{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

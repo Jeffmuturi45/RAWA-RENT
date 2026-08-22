@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Users{% endblock %}
+{% block page_title %}Users{% endblock %}
+{% block nav_users %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Users</h1>
+    <p class="rw-page-subtitle">{{ total }} user{{ total|pluralize }} in your agency</p>
+  </div>
+  <a href="{% url 'accounts:user_create' %}" class="rw-btn rw-btn-primary">
+    <i class="fa fa-user-plus"></i> Add User
+  </a>
+</div>
+
+<!-- Filters -->
+<form method="get" class="mb-4">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <input type="text" name="q" value="{{ query }}" class="rw-input"
+           placeholder="Search name, email, phone..." style="max-width:280px;" />
+    <select name="role" class="rw-select" style="max-width:200px;">
+      <option value="">All roles</option>
+      {% for value, label in role_choices %}
+      <option value="{{ value }}" {% if selected_role == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="rw-btn rw-btn-outline"><i class="fa fa-filter"></i> Filter</button>
+    {% if query or selected_role %}
+    <a href="{% url 'accounts:user_list' %}" class="rw-btn rw-btn-ghost">Clear</a>
+    {% endif %}
+  </div>
+</form>
+
+<div class="rw-card">
+  <div class="rw-table-wrapper">
+    {% if users %}
+    <table class="rw-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div style="font-weight:600;">
+              {{ u.full_name }}
+              {% if u.pk == request.user.pk %}<span style="font-size:11px;color:var(--text-secondary);">(you)</span>{% endif %}
+            </div>
+            {% if u.phone %}<div style="font-size:12px;color:var(--text-secondary);">{{ u.phone }}</div>{% endif %}
+          </td>
+          <td style="font-size:13px;">{{ u.email }}</td>
+          <td><span class="rw-badge rw-badge-info">{{ u.get_role_display }}</span></td>
+          <td>
+            {% if u.is_active %}
+              <span class="rw-badge rw-badge-success">Active</span>
+            {% else %}
+              <span class="rw-badge rw-badge-dark">Inactive</span>
+            {% endif %}
+            {% if u.must_change_password %}
+              <span class="rw-badge rw-badge-warning" title="Must change password on next login">
+                <i class="fa fa-key"></i>
+              </span>
+            {% endif %}
+          </td>
+          <td style="white-space:nowrap;">
+            <a href="{% url 'accounts:user_edit' u.pk %}" class="rw-btn rw-btn-ghost rw-btn-sm" title="Edit">
+              <i class="fa fa-pen"></i>
+            </a>
+            <a href="{% url 'accounts:user_set_password' u.pk %}" class="rw-btn rw-btn-ghost rw-btn-sm" title="Set password">
+              <i class="fa fa-key"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-users"></i></div>
+      <div class="rw-empty-title">No users found</div>
+      <div class="rw-empty-text">
+        {% if query or selected_role %}No users match your filters.{% else %}Add your first team member.{% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Tenancy{% endblock %}
+{% block page_title %}Tenancy{% endblock %}
+{% block nav_tenancies %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'tenancies:list' %}">Tenancies</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  {{ tenancy.tenant.full_name }}
+</div>
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">{{ tenancy.tenant.full_name }}</h1>
+    <p class="rw-page-subtitle">
+      {{ tenancy.unit.prop.name }} · Unit {{ tenancy.unit.unit_number }}
+      &nbsp;·&nbsp;
+      <span class="rw-badge {{ tenancy.get_status_badge }}">{{ tenancy.get_status_display }}</span>
+    </p>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- Tenancy Info -->
+  <div class="col-12 col-lg-5">
+    <div class="rw-card mb-3">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Tenancy Information</h2>
+      </div>
+      <div class="rw-card-body">
+        <table style="width:100%;font-size:13px;">
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;width:45%;">Tenant</td>
+            <td>
+              <a href="{% url 'tenants:detail' tenancy.tenant.pk %}"
+                 style="font-weight:600;color:var(--brand-primary);">
+                {{ tenancy.tenant.full_name }}
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Unit</td>
+            <td>
+              <a href="{% url 'properties:unit_detail' tenancy.unit.pk %}">
+                {{ tenancy.unit.prop.name }} · {{ tenancy.unit.unit_number }}
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Start Date</td>
+            <td style="font-weight:600;">{{ tenancy.start_date }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">End Date</td>
+            <td>{{ tenancy.end_date|default:"Present" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Monthly Rent</td>
+            <td style="font-weight:600;">KSh {{ tenancy.monthly_rent|floatformat:0 }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Required Deposit</td>
+            <td>KSh {{ tenancy.required_deposit|floatformat:0 }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:5px 0;">Billing Day</td>
+            <td>{{ tenancy.get_billing_day_display }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rent History -->
+  <div class="col-12 col-lg-7">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title"><i class="fa fa-arrow-trend-up me-2"></i>Rent History</h2>
+      </div>
+      <div class="rw-table-wrapper">
+        {% if rent_variations %}
+        <table class="rw-table">
+          <thead>
+            <tr>
+              <th>Effective Date</th>
+              <th>Previous</th>
+              <th>New</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rv in rent_variations %}
+            <tr>
+              <td>{{ rv.effective_date }}</td>
+              <td class="rw-table-amount">KSh {{ rv.previous_rent|floatformat:0 }}</td>
+              <td class="rw-table-amount">KSh {{ rv.new_rent|floatformat:0 }}</td>
+              <td style="font-size:13px;color:var(--text-secondary);">{{ rv.reason|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="rw-empty">
+          <div class="rw-empty-icon"><i class="fa fa-arrow-trend-up"></i></div>
+          <div class="rw-empty-title">No rent changes</div>
+          <div class="rw-empty-text">Rent has not been varied on this tenancy.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

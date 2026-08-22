@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Reject Payment{% endblock %}
+{% block page_title %}Reject Payment{% endblock %}
+{% block nav_payments %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'finance:verification_queue' %}">Pending Verification</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  Reject
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">Reject KSh {{ payment.amount|floatformat:0 }}</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-6">
+    <div class="rw-card">
+      <div class="rw-card-body">
+        <div class="rw-alert rw-alert-danger">
+          <i class="fa fa-triangle-exclamation"></i>
+          Rejecting the claim for <strong>{{ payment.tenant.full_name }}</strong>
+          ({{ payment.get_method_display }}{% if payment.reference %} · {{ payment.reference }}{% endif %}).
+          Nothing will be posted to the ledger.
+        </div>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+          <div class="rw-alert rw-alert-danger">
+            <i class="fa fa-circle-exclamation"></i> {{ form.non_field_errors.0 }}
+          </div>
+          {% endif %}
+
+          <div class="rw-form-group">
+            <label class="rw-label">Reason <span class="required">*</span></label>
+            {{ form.reason }}
+            {% if form.reason.errors %}<div class="rw-field-error">{{ form.reason.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="rw-btn rw-btn-danger"><i class="fa fa-ban"></i> Reject Claim</button>
+            <a href="{% url 'finance:payment_verify' payment.pk %}" class="rw-btn rw-btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

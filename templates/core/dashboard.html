@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<!-- Page Header -->
+<div class="rw-page-header">
+    <div>
+        <h1 class="rw-page-title">
+            Good day, {{ request.user.full_name|default:"Admin" }}
+        </h1>
+        <p class="rw-page-subtitle">
+            Here is what is happening across your properties today.
+        </p>
+    </div>
+
+    <div style="text-align:right;">
+        <span style="font-size:13px;color:var(--text-secondary);display:block;">
+            <i class="fa fa-calendar me-1"></i>
+            {% now "l, d F Y" %}
+        </span>
+
+        <span
+            id="live-clock"
+            style="font-size:13px;color:var(--text-secondary);display:block;margin-top:4px;"
+        >
+            <i class="fa fa-clock me-1"></i>
+            --:--:--
+        </span>
+    </div>
+</div>
+
+<script>
+    function updateClock() {
+        const now = new Date();
+
+        const time = now.toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+
+        document.getElementById('live-clock').innerHTML =
+            '<i class="fa fa-clock me-1"></i>' + time;
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+</script>
+
+<!-- Occupancy Stats Row -->
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon primary">
+        <i class="fa fa-building"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Properties</div>
+        <div class="rw-stat-value">{{ stats.total_properties }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon secondary">
+        <i class="fa fa-door-open"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Total Units</div>
+        <div class="rw-stat-value">{{ stats.total_units }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon success">
+        <i class="fa fa-circle-check"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Occupied</div>
+        <div class="rw-stat-value">{{ stats.occupied_units }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon warning">
+        <i class="fa fa-circle"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Vacant</div>
+        <div class="rw-stat-value">{{ stats.vacant_units }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon danger">
+        <i class="fa fa-wrench"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Maintenance</div>
+        <div class="rw-stat-value">{{ stats.maintenance_units }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon info">
+        <i class="fa fa-percent"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Occupancy</div>
+        <div class="rw-stat-value">{{ stats.occupancy_rate }}%</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Finance Stats Row -->
+<div class="row g-3 mb-4">
+
+  <div class="col-12 col-md-4">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon primary">
+        <i class="fa fa-file-invoice-dollar"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Expected Rent</div>
+        <div class="rw-stat-value">
+          KSh {{ stats.expected_rent|floatformat:0 }}
+        </div>
+        <div class="rw-stat-sub">This month · active tenancies</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-4">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon success">
+        <i class="fa fa-money-bill-wave"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Collected</div>
+        <div class="rw-stat-value">
+          KSh {{ stats.collected_rent|floatformat:0 }}
+        </div>
+        <div class="rw-stat-trend up">
+          <i class="fa fa-arrow-up"></i>
+          {{ stats.collection_rate }}% collection rate
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-4">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon danger">
+        <i class="fa fa-triangle-exclamation"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Outstanding</div>
+        <div class="rw-stat-value">
+          KSh {{ stats.outstanding_rent|floatformat:0 }}
+        </div>
+        <div class="rw-stat-sub">Across all tenancies</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom Row -->
+<div class="row g-3">
+
+  <!-- Recent Tenancies -->
+  <div class="col-12 col-lg-6">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">
+          <i class="fa fa-file-contract me-2"></i>Recent Tenancies
+        </h2>
+        <a href="{% url 'tenancies:list' %}" class="rw-btn rw-btn-ghost rw-btn-sm">View all</a>
+      </div>
+      <div class="rw-card-body p-0">
+        {% if recent_tenancies %}
+        <div class="rw-table-wrapper">
+          <table class="rw-table">
+            <thead>
+              <tr>
+                <th>Tenant</th>
+                <th>Unit</th>
+                <th>Rent</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in recent_tenancies %}
+              <tr>
+                <td>
+                  <a href="{% url 'tenants:detail' t.tenant.pk %}" style="font-weight:600;color:var(--brand-primary);">
+                    {{ t.tenant.full_name }}
+                  </a>
+                </td>
+                <td style="font-size:13px;">{{ t.unit.prop.name }} · {{ t.unit.unit_number }}</td>
+                <td class="rw-table-amount">{{ t.monthly_rent|floatformat:0 }}</td>
+                <td><span class="rw-badge {{ t.get_status_badge }}">{{ t.get_status_display }}</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="rw-empty">
+          <div class="rw-empty-icon"><i class="fa fa-file-contract"></i></div>
+          <div class="rw-empty-title">No tenancies yet</div>
+          <div class="rw-empty-text">Place a tenant in a unit to see it here.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Verification -->
+  <div class="col-12 col-lg-6">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">
+          <i class="fa fa-hourglass-half me-2"></i>Pending Verification
+        </h2>
+        {% if stats.pending_payments %}
+        <a href="{% url 'finance:verification_queue' %}" class="rw-badge rw-badge-warning">
+          {{ stats.pending_payments }} awaiting
+        </a>
+        {% endif %}
+      </div>
+      <div class="rw-card-body p-0">
+        {% if stats.pending_payments %}
+        <div class="rw-empty">
+          <div class="rw-empty-icon" style="color:var(--warning);"><i class="fa fa-hourglass-half"></i></div>
+          <div class="rw-empty-title">{{ stats.pending_payments }} claim{{ stats.pending_payments|pluralize }} awaiting verification</div>
+          <div class="rw-empty-text">These do not affect the ledger until verified.</div>
+          <a href="{% url 'finance:verification_queue' %}" class="rw-btn rw-btn-primary">
+            <i class="fa fa-circle-check"></i> Review Queue
+          </a>
+        </div>
+        {% else %}
+        <div class="rw-empty">
+          <div class="rw-empty-icon"><i class="fa fa-hourglass-half"></i></div>
+          <div class="rw-empty-title">No pending verifications</div>
+          <div class="rw-empty-text">Payment claims awaiting verification will appear here.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

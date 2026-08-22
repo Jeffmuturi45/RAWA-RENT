@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Notifications</h1>
+    <p class="rw-page-subtitle">{{ unread }} unread</p>
+  </div>
+  {% if unread %}
+  <form method="post" action="{% url 'notifications:mark_all_read' %}">
+    {% csrf_token %}
+    <button type="submit" class="rw-btn rw-btn-outline">
+      <i class="fa fa-check-double"></i> Mark all read
+    </button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="rw-card">
+  <div class="rw-card-body p-0">
+    {% if notifications %}
+    {% for n in notifications %}
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;
+                {% if not n.is_read %}background:var(--brand-light);{% endif %}">
+      <div style="color:var(--{{ n.level }});font-size:16px;margin-top:2px;">
+        <i class="fa {{ n.get_icon }}"></i>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:13.5px;{% if not n.is_read %}font-weight:600;{% endif %}">{{ n.message }}</div>
+        <div style="font-size:11.5px;color:var(--text-secondary);margin-top:2px;">
+          {{ n.created_at|date:"d M Y, H:i" }}
+          {% if n.actor %} · by {{ n.actor.full_name }}{% endif %}
+        </div>
+      </div>
+      {% if n.url %}
+      <form method="post" action="{% url 'notifications:mark_read' n.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="rw-btn rw-btn-ghost rw-btn-sm" title="Open">
+          <i class="fa fa-arrow-right"></i>
+        </button>
+      </form>
+      {% elif not n.is_read %}
+      <form method="post" action="{% url 'notifications:mark_read' n.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="rw-btn rw-btn-ghost rw-btn-sm" title="Mark read">
+          <i class="fa fa-check"></i>
+        </button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-bell"></i></div>
+      <div class="rw-empty-title">No notifications</div>
+      <div class="rw-empty-text">You're all caught up.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

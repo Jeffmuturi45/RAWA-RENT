@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ r.receipt_number }}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  {% include 'receipts/_receipt_styles.html' %}
+  <style>
+    body { margin:0; background:#EEF0F3; font-family:'Inter',sans-serif; }
+    .sheet { display:flex; justify-content:center; padding:24px 12px; }
+    .paper { background:#fff; box-shadow:0 4px 14px rgba(0,0,0,.15); }
+    .bar { display:flex; gap:8px; justify-content:center; padding:14px; flex-wrap:wrap; }
+    .bar a, .bar button {
+      font-size:13px; font-weight:600; padding:9px 14px; border-radius:6px;
+      border:1px solid #cfd4da; background:#fff; color:#1B3A6B; cursor:pointer;
+      text-decoration:none; display:inline-flex; align-items:center; gap:6px;
+    }
+    .bar .primary { background:#1B3A6B; color:#fff; border-color:#1B3A6B; }
+  </style>
+</head>
+<body>
+
+  <div class="bar rcpt-noprint">
+    <button class="primary" onclick="window.print()"><i class="fa fa-print"></i> Print</button>
+    {% if pdf_available %}
+    <a href="{% url 'receipts:pdf' receipt.pk %}"><i class="fa fa-file-pdf"></i> Download PDF</a>
+    {% endif %}
+    <a href="{% url 'receipts:list' %}"><i class="fa fa-receipt"></i> All receipts</a>
+  </div>
+
+  <div class="sheet">
+    <div class="paper">
+      {% include 'receipts/_receipt_body.html' %}
+    </div>
+  </div>
+
+</body>
+</html>

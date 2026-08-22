@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Adjustment{% endblock %}
+{% block page_title %}Add Adjustment{% endblock %}
+{% block nav_tenants %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'finance:tenant_statement' tenancy.pk %}">{{ tenancy.tenant.full_name }} — Statement</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  Add Adjustment
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">Add Adjustment — {{ tenancy.tenant.full_name }}</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-6">
+    <div class="rw-card">
+      <div class="rw-card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <div class="rw-form-group">
+            <label class="rw-label">Direction <span class="required">*</span></label>
+            {{ form.direction }}
+          </div>
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Amount (KSh) <span class="required">*</span></label>
+                {{ form.amount }}
+                {% if form.amount.errors %}<div class="rw-field-error">{{ form.amount.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">Effective Date</label>
+                {{ form.effective_date }}
+              </div>
+            </div>
+          </div>
+          <div class="rw-form-group">
+            <label class="rw-label">Reason <span class="required">*</span></label>
+            {{ form.reason }}
+            {% if form.reason.errors %}<div class="rw-field-error">{{ form.reason.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="rw-alert rw-alert-warning">
+            <i class="fa fa-triangle-exclamation"></i>
+            Adjustments are audit-logged. Use a clear reason — this is a manual correction.
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="rw-btn rw-btn-primary"><i class="fa fa-save"></i> Record Adjustment</button>
+            <a href="{% url 'finance:tenant_statement' tenancy.pk %}" class="rw-btn rw-btn-ghost">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
