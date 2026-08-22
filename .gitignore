@@ -12,6 +12,7 @@ build/
 # Virtual Environment
 venv/
 env/
+.claude/
 
 # Django
 *.log
