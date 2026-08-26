@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DejaVu Sans', Arial, sans-serif;
+      font-size: 12px;
+      color: #212529;
+      width: 80mm;
+      margin: 0 auto;
+      padding: 8mm;
+    }
+
+    .header {
+      text-align: center;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #ccc;
+      margin-bottom: 10px;
+    }
+
+    .logo-box {
+      width: 36px;
+      height: 36px;
+      background: #1B3A6B;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: #C9A84C;
+      margin-bottom: 6px;
+    }
+
+    .agency-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1B3A6B;
+    }
+
+    .agency-sub {
+      font-size: 9px;
+      color: #6C757D;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .receipt-title {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #1B3A6B;
+      margin: 10px 0;
+      border-top: 1px dashed #ccc;
+      border-bottom: 1px dashed #ccc;
+      padding: 6px 0;
+    }
+
+    .receipt-number {
+      text-align: center;
+      font-size: 11px;
+      color: #6C757D;
+      margin-bottom: 10px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px dotted #eee;
+    }
+
+    .row-label { color: #6C757D; }
+    .row-value { font-weight: 600; text-align: right; }
+
+    .amount-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      margin-top: 6px;
+      border-top: 2px solid #1B3A6B;
+      border-bottom: 2px solid #1B3A6B;
+    }
+
+    .amount-label { font-size: 13px; font-weight: 700; }
+    .amount-value { font-size: 16px; font-weight: 800; color: #28A745; }
+
+    .status-box {
+      text-align: center;
+      margin: 10px 0;
+      padding: 6px;
+      background: #d4edda;
+      border-radius: 4px;
+      font-weight: 700;
+      color: #155724;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed #ccc;
+      font-size: 10px;
+      color: #6C757D;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo-box">R</div>
+    <div class="agency-name">
+      {% if organization %}{{ organization.name }}{% else %}Rawa Estates Agent{% endif %}
+    </div>
+    <div class="agency-sub">Property Management</div>
+    {% if organization and organization.address %}
+    <div style="font-size:10px;color:#6C757D;margin-top:4px;">{{ organization.address }}</div>
+    {% endif %}
+    {% if organization and organization.phone %}
+    <div style="font-size:10px;color:#6C757D;">{{ organization.phone }}</div>
+    {% endif %}
+  </div>
+
+  <div class="receipt-title">Rent Payment Receipt</div>
+  <div class="receipt-number">{{ receipt.receipt_number }}</div>
+
+  <div class="row">
+    <span class="row-label">Tenant</span>
+    <span class="row-value">{{ tenant.full_name }}</span>
+  </div>
+  <div class="row">
+    <span class="row-label">Tenant No.</span>
+    <span class="row-value">{{ tenant.tenant_number }}</span>
+  </div>
+  <div class="row">
+    <span class="row-label">Property</span>
+    <span class="row-value">{{ payment.tenancy.unit.prop.name }}</span>
+  </div>
+  <div class="row">
+    <span class="row-label">Unit</span>
+    <span class="row-value">{{ payment.tenancy.unit.unit_number }}</span>
+  </div>
+  <div class="row">
+    <span class="row-label">Payment Date</span>
+    <span class="row-value">{{ payment.payment_date }}</span>
+  </div>
+  <div class="row">
+    <span class="row-label">Method</span>
+    <span class="row-value">{{ payment.get_method_display }}</span>
+  </div>
+
+  <div class="amount-row">
+    <span class="amount-label">TOTAL PAID</span>
+    <span class="amount-value">KSh {{ payment.amount|floatformat:2 }}</span>
+  </div>
+
+  <div class="status-box">✓ PAYMENT VERIFIED</div>
+
+  <div class="footer">
+    Thank you for your payment.<br/>
+    {% if organization and organization.footer_text %}
+    {{ organization.footer_text }}<br/>
+    {% endif %}
+    Issued: {{ now|date:"d M Y, H:i" }}<br/>
+    This is an official receipt.
+  </div>
+
+</body>
+</html>

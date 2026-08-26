@@ -1,0 +1,99 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}Deposit Account{% endblock %}
+{% block nav_deposit %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">Deposit Account</h1>
+</div>
+
+{% if deposit_account %}
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-4">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon success"><i class="fa fa-piggy-bank"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Deposit Held</div>
+        <div class="rw-stat-value">KSh {{ deposit_account.balance|floatformat:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon primary"><i class="fa fa-file-invoice-dollar"></i></div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Required Deposit</div>
+        <div class="rw-stat-value">KSh {{ deposit_account.required_amount|floatformat:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon {% if deposit_account.shortfall > 0 %}danger{% else %}success{% endif %}">
+        <i class="fa fa-{% if deposit_account.shortfall > 0 %}triangle-exclamation{% else %}circle-check{% endif %}"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Shortfall</div>
+        <div class="rw-stat-value">KSh {{ deposit_account.shortfall|floatformat:0 }}</div>
+        <div class="rw-stat-sub">
+          {% if deposit_account.shortfall > 0 %}Outstanding{% else %}Fully paid{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rw-card">
+  <div class="rw-card-header">
+    <h2 class="rw-card-title">Deposit History</h2>
+  </div>
+  <div class="rw-table-wrapper">
+    {% if movements %}
+    <table class="rw-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Reason</th>
+          <th style="text-align:right;">Amount (KSh)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for move in movements %}
+        <tr>
+          <td>{{ move.created_at|date:"d M Y" }}</td>
+          <td>
+            <span class="rw-badge {% if move.amount > 0 %}rw-badge-success{% else %}rw-badge-danger{% endif %}">
+              {{ move.get_movement_type_display }}
+            </span>
+          </td>
+          <td>{{ move.reason|default:"—" }}</td>
+          <td class="rw-table-amount {% if move.amount > 0 %}credit{% else %}debit{% endif %}"
+              style="text-align:right;">
+            {% if move.amount > 0 %}+{% endif %}{{ move.amount|floatformat:0 }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-piggy-bank"></i></div>
+      <div class="rw-empty-title">No deposit movements yet</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% else %}
+<div class="rw-card">
+  <div class="rw-empty">
+    <div class="rw-empty-icon"><i class="fa fa-piggy-bank"></i></div>
+    <div class="rw-empty-title">No deposit account found</div>
+    <div class="rw-empty-text">Please contact the office for assistance.</div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

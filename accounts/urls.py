@@ -16,12 +16,18 @@ urlpatterns = [
         auth_views.LogoutView.as_view(),
         name='logout'
     ),
+    path(
+        'password-change/',
+        views.password_change,
+        name='password_change'
+    ),
 
     # ── User administration (owner) ───────────────────────
     path('users/',                    views.user_list,         name='user_list'),
     path('users/add/',                views.user_create,       name='user_create'),
     path('users/<uuid:pk>/edit/',     views.user_edit,         name='user_edit'),
-    path('users/<uuid:pk>/password/', views.user_set_password, name='user_set_password'),
+    path('users/<uuid:pk>/password/',
+         views.user_set_password, name='user_set_password'),
 
     # ── Self-service ──────────────────────────────────────
     path('profile/',           views.profile,           name='profile'),

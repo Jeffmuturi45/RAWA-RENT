@@ -9,7 +9,7 @@ from .models import User
 from .permissions import require_capability, Cap
 from .forms import (
     UserCreateForm, UserEditForm, AdminSetPasswordForm,
-    ProfileForm, StyledPasswordChangeForm, FinancialPinForm,
+    ProfileForm, StyledPasswordChangeForm, FinancialPinForm, PortalPasswordChangeForm
 )
 from notifications.models import notify
 
@@ -120,7 +120,8 @@ def user_set_password(request, pk):
                 user_obj.save(update_fields=['must_change_password'])
             else:
                 update_session_auth_hash(request, user_obj)
-            messages.success(request, f'Password updated for {user_obj.full_name}.')
+            messages.success(
+                request, f'Password updated for {user_obj.full_name}.')
             return redirect('accounts:user_list')
     else:
         form = AdminSetPasswordForm(user_obj)
@@ -165,7 +166,8 @@ def change_password(request):
             user = form.save()
             user.must_change_password = False
             user.last_password_change = timezone.now()
-            user.save(update_fields=['must_change_password', 'last_password_change'])
+            user.save(update_fields=[
+                      'must_change_password', 'last_password_change'])
             update_session_auth_hash(request, user)  # keep the user logged in
             messages.success(request, 'Password changed successfully.')
             return redirect('accounts:profile')
@@ -202,6 +204,44 @@ def set_financial_pin(request):
 @login_required
 def portal_placeholder(request):
     """Landing page for TENANT-role users (staff app blocked; portal deferred)."""
-    return render(request, 'accounts/portal_placeholder.html', {
+    return render(request, 'portal/dashboard.html', {
         'page_title': 'Tenant Portal',
     })
+
+
+@login_required
+def password_change(request):
+    """
+    Handles both forced first-login change and voluntary password change.
+    After success, clears must_change_password flag.
+    """
+    if request.method == 'POST':
+        form = PortalPasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Clear the force-change flag
+            user.must_change_password = False
+            user.last_password_change = timezone.now()
+            user.save(update_fields=[
+                      'must_change_password', 'last_password_change'])
+
+            # Keep session alive after password change
+            update_session_auth_hash(request, user)
+
+            messages.success(
+                request, 'Password changed successfully. Welcome!')
+
+            # Redirect tenant to portal, staff to dashboard
+            if request.user.role == 'TENANT':
+                return redirect('portal:dashboard')
+            return redirect('core:dashboard')
+    else:
+        form = PortalPasswordChangeForm(user=request.user)
+
+    forced = request.user.must_change_password
+
+    context = {
+        'form':   form,
+        'forced': forced,
+    }
+    return render(request, 'accounts/password_change.html', context)

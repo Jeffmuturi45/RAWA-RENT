@@ -1,0 +1,99 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}My Statement{% endblock %}
+{% block nav_statement %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Account Statement</h1>
+    {% if tenancy %}
+    <p class="rw-page-subtitle">
+      Unit {{ tenancy.unit.unit_number }}, {{ tenancy.unit.prop.name }}
+      &nbsp;·&nbsp; Since {{ tenancy.start_date }}
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+{% if summary %}
+<!-- Summary Row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="rw-card" style="padding:16px;">
+      <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px;">Total Charged</div>
+      <div style="font-size:18px;font-weight:700;color:var(--brand-dark);">KSh {{ summary.total_charged|floatformat:0 }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-card" style="padding:16px;">
+      <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px;">Total Paid</div>
+      <div style="font-size:18px;font-weight:700;color:var(--success);">KSh {{ summary.total_paid|floatformat:0 }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-card" style="padding:16px;">
+      <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px;">Balance</div>
+      <div style="font-size:18px;font-weight:700;color:{% if summary.outstanding > 0 %}var(--danger){% else %}var(--success){% endif %};">
+        KSh {{ summary.outstanding|floatformat:0 }}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="rw-card" style="padding:16px;">
+      <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px;">Monthly Rent</div>
+      <div style="font-size:18px;font-weight:700;color:var(--brand-dark);">KSh {{ summary.monthly_rent|floatformat:0 }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Statement Table -->
+<div class="rw-card">
+  <div class="rw-card-header">
+    <h2 class="rw-card-title"><i class="fa fa-file-lines me-2"></i>Transaction History</h2>
+  </div>
+  <div class="rw-table-wrapper">
+    {% if entries %}
+    <table class="rw-table rw-ledger-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Description</th>
+          <th style="text-align:right;">Debit (KSh)</th>
+          <th style="text-align:right;">Credit (KSh)</th>
+          <th style="text-align:right;">Balance (KSh)</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td style="white-space:nowrap;">{{ entry.date }}</td>
+          <td>{{ entry.description }}</td>
+          <td class="rw-table-amount debit" style="text-align:right;">
+            {% if entry.debit %}{{ entry.debit|floatformat:0 }}{% else %}—{% endif %}
+          </td>
+          <td class="rw-table-amount credit" style="text-align:right;">
+            {% if entry.credit %}{{ entry.credit|floatformat:0 }}{% else %}—{% endif %}
+          </td>
+          <td class="rw-table-amount balance {% if entry.balance > 0 %}negative{% else %}positive{% endif %}"
+              style="text-align:right;">
+            {{ entry.balance|floatformat:0 }}
+          </td>
+          <td><span class="rw-badge {{ entry.badge }}">{{ entry.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-file-lines"></i></div>
+      <div class="rw-empty-title">No transactions yet</div>
+      <div class="rw-empty-text">Your statement will appear here once charges and payments are recorded.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

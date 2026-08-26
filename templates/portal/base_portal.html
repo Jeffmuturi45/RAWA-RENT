@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}My Account{% endblock %} — RawaRent Tenant Portal</title>
+
+  {% load static %}
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="{% static 'css/rawarent.css' %}" />
+
+  <style>
+    body { background: #F0F2F5; }
+
+    .portal-topbar {
+      background: var(--brand-primary);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-md);
+    }
+
+    .portal-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: white;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .portal-brand-sub {
+      font-size: 11px;
+      color: var(--brand-secondary);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .portal-nav {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+    }
+
+    .portal-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 16px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .portal-nav-item:hover {
+      color: var(--brand-primary);
+      border-bottom-color: var(--brand-primary);
+    }
+
+    .portal-nav-item.active {
+      color: var(--brand-primary);
+      border-bottom-color: var(--brand-secondary);
+      font-weight: 600;
+    }
+
+    .portal-content {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .portal-tenant-bar {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .portal-tenant-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--brand-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .portal-tenant-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+
+    .portal-tenant-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+  <!-- Topbar -->
+  <div class="portal-topbar">
+    <div class="portal-brand">
+      <div style="width:32px;height:32px;background:var(--brand-secondary);
+                  border-radius:6px;display:flex;align-items:center;
+                  justify-content:center;font-size:14px;font-weight:800;
+                  color:var(--brand-dark);">R</div>
+      <div>
+        <div>Rawa Estates Agent</div>
+        <div class="portal-brand-sub">Tenant Portal</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="color:rgba(255,255,255,0.7);font-size:13px;">
+        {{ request.user.full_name }}
+      </span>
+      <form method="post" action="{% url 'accounts:logout' %}" style="margin: 0;">
+    {% csrf_token %}
+    <button type="submit"
+            style="
+                background: none;
+                border: none;
+                padding: 0;
+                color: var(--brand-secondary);
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+            ">
+        <i class="fa fa-right-from-bracket me-1"></i>Sign Out
+    </button>
+</form>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="portal-nav">
+    <a href="{% url 'portal:dashboard' %}"
+       class="portal-nav-item {% block nav_dashboard %}{% endblock %}">
+      <i class="fa fa-gauge-high"></i> Overview
+    </a>
+    <a href="{% url 'portal:statement' %}"
+       class="portal-nav-item {% block nav_statement %}{% endblock %}">
+      <i class="fa fa-file-lines"></i> Statement
+    </a>
+    <a href="{% url 'portal:payments' %}"
+       class="portal-nav-item {% block nav_payments %}{% endblock %}">
+      <i class="fa fa-money-bill-wave"></i> Payments
+    </a>
+    <a href="{% url 'portal:receipts' %}"
+       class="portal-nav-item {% block nav_receipts %}{% endblock %}">
+      <i class="fa fa-receipt"></i> Receipts
+    </a>
+    <a href="{% url 'portal:deposit' %}"
+       class="portal-nav-item {% block nav_deposit %}{% endblock %}">
+      <i class="fa fa-piggy-bank"></i> Deposit
+    </a>
+    <a href="{% url 'portal:profile' %}"
+       class="portal-nav-item {% block nav_profile %}{% endblock %}">
+      <i class="fa fa-user"></i> Profile
+    </a>
+  </div>
+
+  <!-- Content -->
+  <div class="portal-content">
+
+    <!-- Messages -->
+    {% if messages %}
+    {% for message in messages %}
+    <div class="rw-alert rw-alert-{{ message.tags }} mb-3">
+      <i class="fa fa-circle-info"></i> {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Tenant Identity Bar -->
+    {% if request.user.tenant_profile %}
+    <div class="portal-tenant-bar">
+      <div class="portal-tenant-avatar">
+        {{ request.user.full_name|first|upper }}
+      </div>
+      <div>
+        <div class="portal-tenant-name">{{ request.user.tenant_profile.full_name }}</div>
+        <div class="portal-tenant-meta">
+          {{ request.user.tenant_profile.tenant_number }}
+          {% with tenancy=request.user.tenant_profile.get_active_tenancy %}
+          {% if tenancy %}
+          &nbsp;·&nbsp;
+          Unit {{ tenancy.unit.unit_number }},
+          {{ tenancy.unit.prop.name }}
+          {% endif %}
+          {% endwith %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,101 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}Receipt {{ receipt.receipt_number }}{% endblock %}
+{% block nav_receipts %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'portal:receipts' %}">Receipts</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  {{ receipt.receipt_number }}
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">Receipt {{ receipt.receipt_number }}</h1>
+  <a href="{% url 'portal:receipt_pdf' receipt.pk %}"
+     class="rw-btn rw-btn-primary" target="_blank">
+    <i class="fa fa-download"></i> Download PDF
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-12 col-md-7 col-lg-5">
+    <div class="rw-card">
+      <div style="background:var(--brand-primary);padding:24px;text-align:center;">
+        <div style="width:48px;height:48px;background:var(--brand-secondary);
+                    border-radius:8px;display:flex;align-items:center;
+                    justify-content:center;font-size:20px;font-weight:800;
+                    color:var(--brand-dark);margin:0 auto 12px;">R</div>
+        <div style="color:white;font-size:16px;font-weight:700;">Rawa Estates Agent</div>
+        <div style="color:var(--brand-secondary);font-size:11px;
+                    text-transform:uppercase;letter-spacing:1px;margin-top:2px;">
+          Property Management
+        </div>
+      </div>
+
+      <div class="rw-card-body">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-size:12px;color:var(--text-secondary);
+                      text-transform:uppercase;letter-spacing:1px;">Receipt Number</div>
+          <div style="font-size:20px;font-weight:700;font-family:monospace;
+                      color:var(--brand-dark);">{{ receipt.receipt_number }}</div>
+        </div>
+
+        <table style="width:100%;font-size:13.5px;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 0;color:var(--text-secondary);">Tenant</td>
+            <td style="padding:10px 0;font-weight:600;text-align:right;">
+              {{ tenant.full_name }}
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 0;color:var(--text-secondary);">Property</td>
+            <td style="padding:10px 0;font-weight:600;text-align:right;">
+              {{ payment.tenancy.unit.prop.name }}
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 0;color:var(--text-secondary);">Unit</td>
+            <td style="padding:10px 0;font-weight:600;text-align:right;">
+              {{ payment.tenancy.unit.unit_number }}
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 0;color:var(--text-secondary);">Payment Date</td>
+            <td style="padding:10px 0;font-weight:600;text-align:right;">
+              {{ payment.payment_date }}
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 0;color:var(--text-secondary);">Method</td>
+            <td style="padding:10px 0;font-weight:600;text-align:right;">
+              {{ payment.get_method_display }}
+            </td>
+          </tr>
+          <tr style="border-bottom:2px solid var(--brand-primary);">
+            <td style="padding:14px 0;font-size:15px;font-weight:700;">Amount</td>
+            <td style="padding:14px 0;font-size:20px;font-weight:800;
+                       color:var(--success);text-align:right;">
+              KSh {{ payment.amount|floatformat:2 }}
+            </td>
+          </tr>
+        </table>
+
+        <div style="text-align:center;margin-top:20px;">
+          <span class="rw-badge rw-badge-success" style="font-size:13px;padding:6px 16px;">
+            ✓ PAYMENT VERIFIED
+          </span>
+        </div>
+
+        <div style="text-align:center;margin-top:16px;font-size:12px;
+                    color:var(--text-secondary);border-top:1px solid var(--border);
+                    padding-top:16px;">
+          Thank you for your payment.<br/>
+          Issued: {{ receipt.issued_at|date:"d M Y, H:i" }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

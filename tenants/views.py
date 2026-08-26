@@ -5,6 +5,7 @@ from django.db.models import Q
 from accounts.permissions import require_capability, Cap
 from .models import Tenant
 from .forms import TenantForm
+from .services import create_tenant_with_portal_account, update_tenant_portal_account
 
 
 @login_required
@@ -29,7 +30,6 @@ def tenant_list(request):
 
     tenants = tenants.order_by('full_name')
 
-    # Attach current unit to each row
     for tenant in tenants:
         tenant.current_unit = tenant.get_current_unit()
 
@@ -55,11 +55,11 @@ def tenant_detail(request, pk):
     ).order_by('-start_date')
 
     context = {
-        'page_title':     tenant.full_name,
-        'tenant':         tenant,
-        'tenancies':      tenancies,
-        'active_tenancy': tenant.get_active_tenancy(),
-        'current_unit':   tenant.get_current_unit(),
+        'page_title':       tenant.full_name,
+        'tenant':           tenant,
+        'tenancies':        tenancies,
+        'active_tenancy':   tenant.get_active_tenancy(),
+        'current_unit':     tenant.get_current_unit(),
         'current_property': tenant.get_current_property(),
     }
     return render(request, 'tenants/tenant_detail.html', context)
@@ -73,11 +73,36 @@ def tenant_create(request):
     if request.method == 'POST':
         form = TenantForm(request.POST)
         if form.is_valid():
-            tenant = form.save(commit=False)
-            tenant.organization = organization
-            tenant.save()
-            messages.success(
-                request, f'Tenant "{tenant.full_name}" created successfully.')
+            tenant, user, portal_created = create_tenant_with_portal_account(
+                organization=organization,
+                full_name=form.cleaned_data['full_name'],
+                phone=form.cleaned_data['phone'],
+                email=form.cleaned_data.get('email', ''),
+                national_id=form.cleaned_data.get('national_id', ''),
+                address=form.cleaned_data.get('address', ''),
+                emergency_contact=form.cleaned_data.get(
+                    'emergency_contact', ''),
+                emergency_phone=form.cleaned_data.get('emergency_phone', ''),
+                emergency_relation=form.cleaned_data.get(
+                    'emergency_relation', ''),
+                notes=form.cleaned_data.get('notes', ''),
+                created_by=request.user,
+            )
+
+            if portal_created:
+                messages.success(
+                    request,
+                    f'Tenant "{tenant.full_name}" registered successfully. '
+                    f'Portal account created — they can log in with their email '
+                    f'and phone number as the default password.'
+                )
+            else:
+                messages.success(
+                    request,
+                    f'Tenant "{tenant.full_name}" registered successfully. '
+                    f'No portal account created — email was missing or already in use.'
+                )
+
             return redirect('tenants:detail', pk=tenant.pk)
     else:
         form = TenantForm()
@@ -100,8 +125,19 @@ def tenant_edit(request, pk):
         form = TenantForm(request.POST, instance=tenant)
         if form.is_valid():
             form.save()
+
+            # Keep portal account in sync with updated details
+            update_tenant_portal_account(
+                tenant=tenant,
+                full_name=form.cleaned_data.get('full_name'),
+                phone=form.cleaned_data.get('phone'),
+                email=form.cleaned_data.get('email'),
+            )
+
             messages.success(
-                request, f'Tenant "{tenant.full_name}" updated successfully.')
+                request,
+                f'Tenant "{tenant.full_name}" updated successfully.'
+            )
             return redirect('tenants:detail', pk=tenant.pk)
     else:
         form = TenantForm(instance=tenant)

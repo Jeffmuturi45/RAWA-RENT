@@ -1,0 +1,59 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}Payment History{% endblock %}
+{% block nav_payments %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">Payment History</h1>
+</div>
+
+<div class="rw-card">
+  <div class="rw-table-wrapper">
+    {% if payments %}
+    <table class="rw-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Method</th>
+          <th>Receipt</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payment in payments %}
+        <tr>
+          <td>{{ payment.payment_date }}</td>
+          <td class="rw-table-amount credit">KSh {{ payment.amount|floatformat:0 }}</td>
+          <td>{{ payment.get_method_display }}</td>
+          <td>
+            {% if payment.receipt %}
+            <a href="{% url 'portal:receipt_detail' payment.receipt.pk %}"
+               class="rw-btn rw-btn-ghost rw-btn-sm">
+              <i class="fa fa-receipt me-1"></i>{{ payment.receipt.receipt_number }}
+            </a>
+            {% else %}
+            <span style="color:var(--text-secondary);font-size:13px;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="rw-badge {{ payment.get_status_badge }}">
+              {{ payment.get_status_display }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-money-bill-wave"></i></div>
+      <div class="rw-empty-title">No payments yet</div>
+      <div class="rw-empty-text">Your verified payments will appear here.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}My Profile{% endblock %}
+{% block nav_profile %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">My Profile</h1>
+</div>
+
+<div class="row">
+  <div class="col-12 col-md-6">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Personal Information</h2>
+      </div>
+      <div class="rw-card-body">
+        <table style="width:100%;font-size:13.5px;">
+          <tr>
+            <td style="color:var(--text-secondary);padding:8px 0;width:40%;">Full Name</td>
+            <td style="font-weight:600;">{{ tenant.full_name }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:8px 0;">Tenant Number</td>
+            <td style="font-family:monospace;font-weight:600;">{{ tenant.tenant_number }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:8px 0;">Phone</td>
+            <td>{{ tenant.phone }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:8px 0;">Email</td>
+            <td>{{ tenant.email|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:8px 0;">National ID</td>
+            <td>{{ tenant.national_id|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:8px 0;">Address</td>
+            <td>{{ tenant.address|default:"—" }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Emergency Contact</h2>
+      </div>
+      <div class="rw-card-body">
+        <table style="width:100%;font-size:13.5px;">
+          <tr>
+            <td style="color:var(--text-secondary);padding:8px 0;width:40%;">Contact Name</td>
+            <td style="font-weight:600;">{{ tenant.emergency_contact|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:8px 0;">Phone</td>
+            <td>{{ tenant.emergency_phone|default:"—" }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:8px 0;">Relationship</td>
+            <td>{{ tenant.emergency_relation|default:"—" }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

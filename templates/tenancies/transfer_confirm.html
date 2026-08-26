@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}Confirm Transfer{% endblock %}
+{% block page_title %}Confirm Transfer{% endblock %}
+{% block nav_tenancies %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'tenancies:list' %}">Tenancies</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  <a href="{% url 'tenancies:detail' tenancy.pk %}">{{ tenancy.tenant.full_name }}</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  Confirm Transfer
+</div>
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">Confirm Transfer</h1>
+</div>
+
+<!-- Transfer Summary -->
+<div class="rw-card mb-4">
+  <div class="rw-card-header">
+    <h2 class="rw-card-title">
+      <i class="fa fa-file-invoice-dollar me-2"></i>Transfer Financial Summary
+    </h2>
+  </div>
+  <div class="rw-card-body">
+    <div class="row g-3">
+
+      <div class="col-12 col-md-6">
+        <div style="background:var(--brand-light);border-radius:var(--radius-md);padding:16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);
+                      text-transform:uppercase;margin-bottom:10px;">
+            Current Unit — {{ plan.old_unit_number }}
+          </div>
+          <table style="width:100%;font-size:13.5px;">
+            <tr>
+              <td style="color:var(--text-secondary);padding:4px 0;">Monthly Rent</td>
+              <td style="font-weight:600;text-align:right;">KSh {{ plan.old_monthly_rent }}</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-secondary);padding:4px 0;">Deposit Held</td>
+              <td style="font-weight:600;text-align:right;">KSh {{ plan.old_deposit_held }}</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-secondary);padding:4px 0;">Outstanding Rent</td>
+              <td style="font-weight:600;text-align:right;
+                         color:{% if plan.outstanding_rent != '0' %}var(--danger){% else %}var(--success){% endif %};">
+                KSh {{ plan.outstanding_rent }}
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <div style="background:var(--brand-light);border-radius:var(--radius-md);padding:16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);
+                      text-transform:uppercase;margin-bottom:10px;">
+            New Unit — {{ plan.new_unit_number }}
+          </div>
+          <table style="width:100%;font-size:13.5px;">
+            <tr>
+              <td style="color:var(--text-secondary);padding:4px 0;">Monthly Rent</td>
+              <td style="font-weight:600;text-align:right;">KSh {{ plan.new_monthly_rent }}</td>
+            </tr>
+            <tr>
+              <td style="color:var(--text-secondary);padding:4px 0;">Deposit Required</td>
+              <td style="font-weight:600;text-align:right;">KSh {{ plan.new_deposit_required }}</td>
+            </tr>
+            <tr>
+              <td style="padding:4px 0;font-weight:700;">Deposit Difference</td>
+              <td style="font-weight:700;text-align:right;
+                         color:{% if plan.deposit_difference|slice:':1' == '-' %}var(--success){% elif plan.deposit_difference == '0' %}var(--text-secondary){% else %}var(--danger){% endif %};">
+                KSh {{ plan.deposit_difference }}
+                {% if plan.deposit_difference|slice:':1' == '-' %}
+                  (surplus — tenant's favour)
+                {% elif plan.deposit_difference != '0' %}
+                  (top-up required)
+                {% endif %}
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    {% if plan.outstanding_rent != '0' %}
+    <div class="rw-alert rw-alert-warning mt-3">
+      <i class="fa fa-triangle-exclamation"></i>
+      Outstanding rent of <strong>KSh {{ plan.outstanding_rent }}</strong>
+      remains on the old tenancy. This must be collected separately —
+      it will not transfer automatically.
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- Confirmation Form -->
+<div class="row">
+  <div class="col-12 col-lg-7">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Deposit Handling & Confirmation</h2>
+      </div>
+      <div class="rw-card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="rw-form-group">
+            <label class="rw-label">{{ form.deposit_disposition.label }}</label>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+              {% for radio in form.deposit_disposition %}
+              <label style="display:flex;align-items:center;gap:10px;
+                            padding:10px 14px;border:1px solid var(--border);
+                            border-radius:var(--radius-sm);cursor:pointer;
+                            font-size:13.5px;">
+                {{ radio.tag }}
+                {{ radio.choice_label }}
+              </label>
+              {% endfor %}
+            </div>
+            {% if form.deposit_disposition.errors %}
+            <div class="rw-field-error">{{ form.deposit_disposition.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Additional Notes</label>
+            {{ form.notes }}
+          </div>
+
+          <div style="padding:16px;background:#fff3cd;border-radius:var(--radius-sm);
+                      border:1px solid #ffeeba;margin-bottom:16px;">
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+              {{ form.confirm }}
+              <span style="font-size:13.5px;font-weight:500;color:#856404;">
+                {{ form.confirm.label }}
+              </span>
+            </label>
+            {% if form.confirm.errors %}
+            <div class="rw-field-error mt-1">{{ form.confirm.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div style="display:flex;gap:8px;">
+            <button type="submit" class="rw-btn rw-btn-primary">
+              <i class="fa fa-check"></i> Execute Transfer
+            </button>
+            <a href="{% url 'tenancies:transfer_initiate' tenancy.pk %}"
+               class="rw-btn rw-btn-ghost">
+              Back
+            </a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

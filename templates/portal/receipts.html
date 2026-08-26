@@ -1,0 +1,55 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}My Receipts{% endblock %}
+{% block nav_receipts %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <h1 class="rw-page-title">My Receipts</h1>
+</div>
+
+<div class="rw-card">
+  <div class="rw-table-wrapper">
+    {% if receipts %}
+    <table class="rw-table">
+      <thead>
+        <tr>
+          <th>Receipt No.</th>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Method</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for receipt in receipts %}
+        <tr>
+          <td style="font-family:monospace;font-weight:600;">{{ receipt.receipt_number }}</td>
+          <td>{{ receipt.payment.payment_date }}</td>
+          <td class="rw-table-amount credit">KSh {{ receipt.payment.amount|floatformat:0 }}</td>
+          <td>{{ receipt.payment.get_method_display }}</td>
+          <td style="display:flex;gap:6px;">
+            <a href="{% url 'portal:receipt_detail' receipt.pk %}"
+               class="rw-btn rw-btn-outline rw-btn-sm">
+              <i class="fa fa-eye"></i> View
+            </a>
+            <a href="{% url 'portal:receipt_pdf' receipt.pk %}"
+               class="rw-btn rw-btn-ghost rw-btn-sm" target="_blank">
+              <i class="fa fa-download"></i> PDF
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="rw-empty">
+      <div class="rw-empty-icon"><i class="fa fa-receipt"></i></div>
+      <div class="rw-empty-title">No receipts yet</div>
+      <div class="rw-empty-text">Receipts will appear here once payments are verified.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

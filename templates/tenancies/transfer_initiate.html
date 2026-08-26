@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block title %}Transfer — {{ tenancy.tenant.full_name }}{% endblock %}
+{% block page_title %}Unit Transfer{% endblock %}
+{% block nav_tenancies %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'tenancies:list' %}">Tenancies</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  <a href="{% url 'tenancies:detail' tenancy.pk %}">{{ tenancy.tenant.full_name }}</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  Transfer
+</div>
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Transfer Tenant</h1>
+    <p class="rw-page-subtitle">
+      Moving <strong>{{ tenancy.tenant.full_name }}</strong>
+      from <strong>Unit {{ tenancy.unit.unit_number }}</strong>,
+      {{ tenancy.unit.prop.name }}
+    </p>
+  </div>
+</div>
+
+<!-- Warning -->
+<div class="rw-alert rw-alert-warning mb-4">
+  <i class="fa fa-triangle-exclamation"></i>
+  This will close the current tenancy and create a new one.
+  The old tenancy and all its financial records are preserved.
+  Outstanding rent on the old tenancy must be collected separately.
+</div>
+
+<div class="row">
+  <div class="col-12 col-lg-7">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Transfer Details</h2>
+      </div>
+      <div class="rw-card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <div class="rw-form-group">
+            <label class="rw-label">New Unit <span class="required">*</span></label>
+            {{ form.new_unit }}
+            <div class="rw-field-help">{{ form.new_unit.help_text }}</div>
+            {% if form.new_unit.errors %}
+            <div class="rw-field-error">{{ form.new_unit.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Transfer Date <span class="required">*</span></label>
+            {{ form.transfer_date }}
+            {% if form.transfer_date.errors %}
+            <div class="rw-field-error">{{ form.transfer_date.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">New Monthly Rent (KSh)</label>
+                {{ form.new_monthly_rent }}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">New Required Deposit (KSh)</label>
+                {{ form.new_required_deposit }}
+              </div>
+            </div>
+          </div>
+
+          <div class="rw-form-group">
+            <label class="rw-label">Reason for Transfer</label>
+            {{ form.reason }}
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button type="submit" class="rw-btn rw-btn-primary">
+              <i class="fa fa-arrow-right"></i> Calculate Transfer Summary
+            </button>
+            <a href="{% url 'tenancies:detail' tenancy.pk %}" class="rw-btn rw-btn-ghost">
+              Cancel
+            </a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current tenancy info -->
+  <div class="col-12 col-lg-5">
+    <div class="rw-card">
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">Current Tenancy</h2>
+      </div>
+      <div class="rw-card-body">
+        <table style="width:100%;font-size:13.5px;">
+          <tr>
+            <td style="color:var(--text-secondary);padding:6px 0;">Tenant</td>
+            <td style="font-weight:600;">{{ tenancy.tenant.full_name }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:6px 0;">Unit</td>
+            <td style="font-weight:600;">{{ tenancy.unit.unit_number }}, {{ tenancy.unit.prop.name }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:6px 0;">Monthly Rent</td>
+            <td style="font-weight:600;">KSh {{ tenancy.monthly_rent|floatformat:0 }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:6px 0;">Required Deposit</td>
+            <td style="font-weight:600;">KSh {{ tenancy.required_deposit|floatformat:0 }}</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-secondary);padding:6px 0;">Since</td>
+            <td>{{ tenancy.start_date }}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -16,16 +16,19 @@ class UserCreateForm(forms.ModelForm):
 
     password1 = forms.CharField(
         label='Password',
-        widget=forms.PasswordInput(attrs={'class': 'rw-input', 'placeholder': 'Initial password'}),
+        widget=forms.PasswordInput(
+            attrs={'class': 'rw-input', 'placeholder': 'Initial password'}),
     )
     password2 = forms.CharField(
         label='Confirm Password',
-        widget=forms.PasswordInput(attrs={'class': 'rw-input', 'placeholder': 'Re-enter password'}),
+        widget=forms.PasswordInput(
+            attrs={'class': 'rw-input', 'placeholder': 'Re-enter password'}),
     )
 
     class Meta:
         model = User
-        fields = ['full_name', 'email', 'phone', 'role', 'is_active', 'must_change_password']
+        fields = ['full_name', 'email', 'phone',
+                  'role', 'is_active', 'must_change_password']
         widgets = {
             'full_name': forms.TextInput(attrs={'class': 'rw-input', 'placeholder': 'e.g. Peter Kamau'}),
             'email':     forms.EmailInput(attrs={'class': 'rw-input', 'placeholder': 'name@agency.co.ke'}),
@@ -44,7 +47,8 @@ class UserCreateForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data['email'].lower()
         if User.objects.filter(email=email).exists():
-            raise forms.ValidationError('A user with this email already exists.')
+            raise forms.ValidationError(
+                'A user with this email already exists.')
         return email
 
     def clean_password2(self):
@@ -126,7 +130,8 @@ class FinancialPinForm(forms.Form):
     confirm_pin = forms.CharField(
         label='Confirm PIN',
         min_length=4, max_length=6,
-        widget=forms.PasswordInput(attrs={'class': 'rw-input', 'inputmode': 'numeric'}),
+        widget=forms.PasswordInput(
+            attrs={'class': 'rw-input', 'inputmode': 'numeric'}),
     )
 
     def clean_pin(self):
@@ -144,3 +149,30 @@ class FinancialPinForm(forms.Form):
 
     def hashed_pin(self):
         return make_password(self.cleaned_data['pin'])
+
+
+class PortalPasswordChangeForm(PasswordChangeForm):
+    """
+    Extends Django's built-in PasswordChangeForm with RawaRent styling.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['old_password'].widget = forms.PasswordInput(attrs={
+            'class': 'rw-input',
+            'placeholder': 'Current password',
+            'autofocus': True,
+        })
+        self.fields['new_password1'].widget = forms.PasswordInput(attrs={
+            'class': 'rw-input',
+            'placeholder': 'New password',
+        })
+        self.fields['new_password2'].widget = forms.PasswordInput(attrs={
+            'class': 'rw-input',
+            'placeholder': 'Confirm new password',
+        })
+
+        self.fields['old_password'].label = 'Current Password'
+        self.fields['new_password1'].label = 'New Password'
+        self.fields['new_password2'].label = 'Confirm New Password'

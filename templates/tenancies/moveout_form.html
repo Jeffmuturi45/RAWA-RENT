@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% block title %}Move-Out — {{ tenancy.tenant.full_name }}{% endblock %}
+{% block page_title %}Move-Out{% endblock %}
+{% block nav_tenancies %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-breadcrumb mb-3">
+  <a href="{% url 'tenancies:list' %}">Tenancies</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  <a href="{% url 'tenancies:detail' tenancy.pk %}">{{ tenancy.tenant.full_name }}</a>
+  <i class="fa fa-chevron-right mx-2" style="font-size:10px;"></i>
+  Move-Out
+</div>
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Process Move-Out</h1>
+    <p class="rw-page-subtitle">
+      <strong>{{ tenancy.tenant.full_name }}</strong> —
+      Unit {{ tenancy.unit.unit_number }}, {{ tenancy.unit.prop.name }}
+    </p>
+  </div>
+</div>
+
+<div class="rw-alert rw-alert-danger mb-4">
+  <i class="fa fa-triangle-exclamation"></i>
+  This will permanently end the tenancy and mark the unit as vacant.
+  This action cannot be undone.
+</div>
+
+<!-- Financial Summary -->
+<div class="rw-card mb-4">
+  <div class="rw-card-header">
+    <h2 class="rw-card-title">Financial Position at Move-Out</h2>
+  </div>
+  <div class="rw-card-body">
+    <div class="row g-3">
+      <div class="col-6 col-md-3">
+        <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;">Deposit Held</div>
+        <div style="font-size:20px;font-weight:700;color:var(--brand-dark);">
+          KSh {{ summary.deposit_held|floatformat:0 }}
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;">Outstanding Rent</div>
+        <div style="font-size:20px;font-weight:700;
+                    color:{% if summary.outstanding_rent > 0 %}var(--danger){% else %}var(--success){% endif %};">
+          KSh {{ summary.outstanding_rent|floatformat:0 }}
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;">Damage Deductions</div>
+        <div style="font-size:20px;font-weight:700;color:var(--warning);">
+          KSh 0 <span style="font-size:12px;">(enter below)</span>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="font-size:11px;color:var(--text-secondary);text-transform:uppercase;">Refundable</div>
+        <div style="font-size:20px;font-weight:700;color:var(--success);">
+          KSh {{ summary.deposit_refundable|floatformat:0 }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Move-Out Form -->
+<div class="row">
+  <div class="col-12 col-lg-8">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <!-- Dates -->
+      <div class="rw-card mb-3">
+        <div class="rw-card-header">
+          <h2 class="rw-card-title"><i class="fa fa-calendar me-2"></i>Dates</h2>
+        </div>
+        <div class="rw-card-body">
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">{{ form.notice_date.label }} <span class="required">*</span></label>
+                {{ form.notice_date }}
+                {% if form.notice_date.errors %}
+                <div class="rw-field-error">{{ form.notice_date.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">{{ form.moveout_date.label }} <span class="required">*</span></label>
+                {{ form.moveout_date }}
+                {% if form.moveout_date.errors %}
+                <div class="rw-field-error">{{ form.moveout_date.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="rw-form-group">
+            <div style="display:flex;align-items:center;gap:10px;">
+              {{ form.keys_returned }}
+              <label class="rw-label" style="margin:0;">{{ form.keys_returned.label }}</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inspection -->
+      <div class="rw-card mb-3">
+        <div class="rw-card-header">
+          <h2 class="rw-card-title"><i class="fa fa-clipboard-check me-2"></i>Unit Inspection</h2>
+        </div>
+        <div class="rw-card-body">
+          <div class="row g-3">
+            {% for field in form %}
+              {% if field.name in 'walls_condition,windows_condition,plumbing_condition,electrical_condition,general_condition' %}
+              <div class="col-6 col-md-4">
+                <div class="rw-form-group">
+                  <label class="rw-label">{{ field.label }}</label>
+                  {{ field }}
+                </div>
+              </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <div class="rw-form-group">
+            <label class="rw-label">{{ form.inspection_notes.label }}</label>
+            {{ form.inspection_notes }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Settlement -->
+      <div class="rw-card mb-3">
+        <div class="rw-card-header">
+          <h2 class="rw-card-title"><i class="fa fa-piggy-bank me-2"></i>Deposit Settlement</h2>
+        </div>
+        <div class="rw-card-body">
+          <div class="row">
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">{{ form.damage_deductions.label }}</label>
+                {{ form.damage_deductions }}
+                <div class="rw-field-help">{{ form.damage_deductions.help_text }}</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="rw-form-group">
+                <label class="rw-label">{{ form.deposit_settlement.label }}</label>
+                {{ form.deposit_settlement }}
+              </div>
+            </div>
+          </div>
+          <div class="rw-form-group">
+            <label class="rw-label">{{ form.reason.label }}</label>
+            {{ form.reason }}
+          </div>
+          <div class="rw-form-group">
+            <label class="rw-label">{{ form.notes.label }}</label>
+            {{ form.notes }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirmation -->
+      <div style="padding:16px;background:#f8d7da;border-radius:var(--radius-sm);
+                  border:1px solid #f5c6cb;margin-bottom:16px;">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+          {{ form.confirm }}
+          <span style="font-size:13.5px;font-weight:500;color:#721c24;">
+            {{ form.confirm.label }}
+          </span>
+        </label>
+        {% if form.confirm.errors %}
+        <div class="rw-field-error mt-1">{{ form.confirm.errors.0 }}</div>
+        {% endif %}
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="rw-btn rw-btn-danger">
+          <i class="fa fa-right-from-bracket"></i> Process Move-Out
+        </button>
+        <a href="{% url 'tenancies:detail' tenancy.pk %}" class="rw-btn rw-btn-ghost">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+{% endblock %}

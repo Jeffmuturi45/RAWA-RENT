@@ -1,0 +1,152 @@
+{% extends 'portal/base_portal.html' %}
+{% block title %}My Account{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Welcome, {{ tenant.full_name|default:"Tenant" }}</h1>
+    <p class="rw-page-subtitle">Here is your account overview.</p>
+  </div>
+</div>
+
+{% if summary %}
+
+<!-- Balance Cards -->
+<div class="row g-3 mb-4">
+
+  <div class="col-12 col-md-4">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon {% if summary.outstanding > 0 %}danger{% else %}success{% endif %}">
+        <i class="fa fa-file-invoice-dollar"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Outstanding Balance</div>
+        <div class="rw-stat-value">KSh {{ summary.outstanding|floatformat:0 }}</div>
+        <div class="rw-stat-sub">
+          {% if summary.outstanding > 0 %}
+            Amount currently owed
+          {% else %}
+            Account is clear
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-4">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon primary">
+        <i class="fa fa-home"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Monthly Rent</div>
+        <div class="rw-stat-value">KSh {{ summary.monthly_rent|floatformat:0 }}</div>
+        <div class="rw-stat-sub">
+          Unit {{ summary.unit.unit_number }}, {{ summary.unit.prop.name }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-4">
+    <div class="rw-stat-card">
+      <div class="rw-stat-icon secondary">
+        <i class="fa fa-piggy-bank"></i>
+      </div>
+      <div class="rw-stat-body">
+        <div class="rw-stat-label">Deposit Held</div>
+        <div class="rw-stat-value">KSh {{ summary.deposit_held|floatformat:0 }}</div>
+        <div class="rw-stat-sub">
+          of KSh {{ summary.deposit_required|floatformat:0 }} required
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Unpaid Charges -->
+{% if summary.unpaid_charges %}
+<div class="rw-card mb-4">
+  <div class="rw-card-header">
+    <h2 class="rw-card-title">
+      <i class="fa fa-triangle-exclamation me-2" style="color:var(--warning);"></i>
+      Outstanding Charges
+    </h2>
+  </div>
+  <div class="rw-table-wrapper">
+    <table class="rw-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Due Date</th>
+          <th>Amount</th>
+          <th>Paid</th>
+          <th>Balance</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for charge in summary.unpaid_charges %}
+        <tr>
+          <td>{{ charge.description|default:charge.get_charge_type_display }}</td>
+          <td>{{ charge.due_date }}</td>
+          <td class="rw-table-amount">KSh {{ charge.amount|floatformat:0 }}</td>
+          <td class="rw-table-amount credit">KSh {{ charge.amount_allocated|floatformat:0 }}</td>
+          <td class="rw-table-amount debit">KSh {{ charge.balance|floatformat:0 }}</td>
+          <td><span class="rw-badge {{ charge.get_status_badge }}">{{ charge.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Last Payment -->
+{% if summary.last_payment %}
+<div class="rw-card mb-4">
+  <div class="rw-card-header">
+    <h2 class="rw-card-title"><i class="fa fa-clock-rotate-left me-2"></i>Last Payment</h2>
+    <a href="{% url 'portal:payments' %}" class="rw-btn rw-btn-ghost rw-btn-sm">View all</a>
+  </div>
+  <div class="rw-card-body">
+    <div class="row">
+      <div class="col-6 col-md-3">
+        <div style="font-size:12px;color:var(--text-secondary);">Amount</div>
+        <div style="font-size:18px;font-weight:700;color:var(--success);">
+          KSh {{ summary.last_payment.amount|floatformat:0 }}
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="font-size:12px;color:var(--text-secondary);">Date</div>
+        <div style="font-size:15px;font-weight:600;">{{ summary.last_payment.payment_date }}</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="font-size:12px;color:var(--text-secondary);">Method</div>
+        <div style="font-size:15px;font-weight:600;">{{ summary.last_payment.get_method_display }}</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div style="font-size:12px;color:var(--text-secondary);">Status</div>
+        <span class="rw-badge {{ summary.last_payment.get_status_badge }}">
+          {{ summary.last_payment.get_status_display }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="rw-card">
+  <div class="rw-empty">
+    <div class="rw-empty-icon"><i class="fa fa-house-crack"></i></div>
+    <div class="rw-empty-title">No active tenancy found</div>
+    <div class="rw-empty-text">Please contact the office if you believe this is an error.</div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

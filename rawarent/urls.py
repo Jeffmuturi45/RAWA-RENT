@@ -37,6 +37,9 @@ urlpatterns = [
 
     # Settings (agency/organization)
     path('settings/', include('organizations.urls')),
+
+    # Tenant Portal
+    path('portal/', include('portal.urls')),
 ]
 
 if settings.DEBUG:
