@@ -5,10 +5,21 @@ from django.db import models
 class Notification(models.Model):
 
     class Level(models.TextChoices):
-        INFO = 'info',       'Info'
-        SUCCESS = 'success',    'Success'
-        WARNING = 'warning',    'Warning'
-        DANGER = 'danger',     'Danger'
+        INFO = 'info',    'Info'
+        SUCCESS = 'success', 'Success'
+        WARNING = 'warning', 'Warning'
+        DANGER = 'danger',  'Danger'
+
+    # ── NEW: notification type for filtering/icons ─────────
+    class Type(models.TextChoices):
+        RENT_DUE = 'RENT_DUE',           'Rent Due'
+        PAYMENT_RECEIVED = 'PAYMENT_RECEIVED',   'Payment Received'
+        PAYMENT_VERIFIED = 'PAYMENT_VERIFIED',   'Payment Verified'
+        PAYMENT_REJECTED = 'PAYMENT_REJECTED',   'Payment Rejected'
+        MAINTENANCE_UPDATE = 'MAINTENANCE_UPDATE', 'Maintenance Update'
+        MOVEOUT_UPDATE = 'MOVEOUT_UPDATE',     'Move-Out Update'
+        TRANSFER_UPDATE = 'TRANSFER_UPDATE',    'Transfer Update'
+        GENERAL = 'GENERAL',            'General'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(
@@ -29,6 +40,12 @@ class Notification(models.Model):
         related_name='notifications_sent',
         null=True,
         blank=True,
+    )
+    # ── NEW: type field ────────────────────────────────────
+    notification_type = models.CharField(
+        max_length=30,
+        choices=Type.choices,
+        default=Type.GENERAL,
     )
     message = models.TextField()
     url = models.CharField(max_length=500, blank=True)
@@ -52,21 +69,37 @@ class Notification(models.Model):
         return f'{self.recipient} — {self.message[:40]}'
 
     def get_icon(self):
-        icon_map = {
+        # Type-specific icons take priority, fall back to level icons
+        type_icon_map = {
+            self.Type.RENT_DUE:           'fa-file-invoice-dollar',
+            self.Type.PAYMENT_RECEIVED:   'fa-money-bill-wave',
+            self.Type.PAYMENT_VERIFIED:   'fa-circle-check',
+            self.Type.PAYMENT_REJECTED:   'fa-circle-xmark',
+            self.Type.MAINTENANCE_UPDATE: 'fa-wrench',
+            self.Type.MOVEOUT_UPDATE:     'fa-door-open',
+            self.Type.TRANSFER_UPDATE:    'fa-right-left',
+            self.Type.GENERAL:            'fa-bell',
+        }
+        level_icon_map = {
             self.Level.INFO:    'fa-circle-info',
             self.Level.SUCCESS: 'fa-circle-check',
             self.Level.WARNING: 'fa-triangle-exclamation',
             self.Level.DANGER:  'fa-circle-exclamation',
         }
-        return icon_map.get(self.level, 'fa-circle-info')
+        return type_icon_map.get(
+            self.notification_type,
+            level_icon_map.get(self.level, 'fa-bell')
+        )
 
 
 # ─────────────────────────────────────────
-# HELPERS
+# HELPERS  (unchanged API — fully backward compatible)
 # ─────────────────────────────────────────
+
 def notify(recipient, message, url='', level=Notification.Level.INFO,
-           actor=None, organization=None):
-    """Create a single notification."""
+           actor=None, organization=None,
+           notification_type=Notification.Type.GENERAL):
+    """Create a single in-app notification."""
     if recipient is None:
         return None
     return Notification.objects.create(
@@ -75,12 +108,13 @@ def notify(recipient, message, url='', level=Notification.Level.INFO,
         url=url,
         level=level,
         actor=actor,
+        notification_type=notification_type,
         organization=organization or getattr(recipient, 'organization', None),
     )
 
 
 def notify_org_admins(organization, message, url='', level=Notification.Level.INFO,
-                      actor=None):
+                      actor=None, notification_type=Notification.Type.GENERAL):
     """
     Fan out a notification to every Agency Owner / Manager in the org.
     """
@@ -98,7 +132,9 @@ def notify_org_admins(organization, message, url='', level=Notification.Level.IN
     created = [
         Notification(
             recipient=admin, message=message, url=url,
-            level=level, actor=actor, organization=organization,
+            level=level, actor=actor,
+            notification_type=notification_type,
+            organization=organization,
         )
         for admin in admins
     ]

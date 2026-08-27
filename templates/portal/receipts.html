@@ -29,7 +29,7 @@
           <td class="rw-table-amount credit">KSh {{ receipt.payment.amount|floatformat:0 }}</td>
           <td>{{ receipt.payment.get_method_display }}</td>
           <td style="display:flex;gap:6px;">
-            <a href="{% url 'portal:receipt_detail' receipt.pk %}"
+            <a href="{% url 'receipts:detail' receipt.pk %}"
                class="rw-btn rw-btn-outline rw-btn-sm">
               <i class="fa fa-eye"></i> View
             </a>

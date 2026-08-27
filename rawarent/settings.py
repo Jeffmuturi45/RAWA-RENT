@@ -32,6 +32,8 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     'rest_framework',
     'corsheaders',
+    'django_celery_beat',
+    'django_celery_results',
 ]
 
 LOCAL_APPS = [
@@ -218,3 +220,25 @@ ALLOWED_UPLOAD_EXTENSIONS = [
 # ─────────────────────────────────────────
 AGENCY_NAME = config('AGENCY_NAME', default='Rawa Estates Agent')
 CUTOVER_DATE = config('CUTOVER_DATE', default='2026-09-01')
+
+
+# ═══════════════════════════════════════════════════════════════
+# CELERY  —  paste this block into the BOTTOM of rawarent/settings.py
+# ═══════════════════════════════════════════════════════════════
+
+# Redis broker — localhost for dev, env var for Azure
+CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('REDIS_URL', default='redis://localhost:6379/0')
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Africa/Nairobi'
+CELERY_ENABLE_UTC = True
+
+# Tasks visible in Django admin via django-celery-results (optional but handy)
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60   # 30 min hard limit per task
+
+# Beat stores schedule in DB (not a file) — works on Azure multi-instance
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'

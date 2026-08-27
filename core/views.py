@@ -6,6 +6,8 @@ from accounts.permissions import staff_required
 from properties.models import Property, Unit
 from tenancies.models import Tenancy
 from finance.services import arrears_service
+from portal.models import MaintenanceRequest, MoveOutRequest, TransferRequest
+from finance.models import RentNotice
 
 
 @login_required
@@ -26,7 +28,8 @@ def dashboard(request):
     occupied = units.filter(status=Unit.Status.OCCUPIED).count()
     vacant = units.filter(status=Unit.Status.VACANT).count()
     maintenance = units.filter(status=Unit.Status.MAINTENANCE).count()
-    occupancy_rate = round((occupied / total_units) * 100, 1) if total_units else 0
+    occupancy_rate = round((occupied / total_units) *
+                           100, 1) if total_units else 0
 
     # ── Expected rent = Σ monthly_rent of ACTIVE tenancies (real) ──
     active_tenancies = Tenancy.objects.filter(
@@ -76,6 +79,11 @@ def dashboard(request):
             'collection_rate':   collection_rate,
             'todays_payments':   todays_payments,
             'pending_payments':  pending,
+            'pending_notices':   RentNotice.objects.filter(organization=org, status='SUBMITTED').count() if org else 0,
+            'open_maintenance':  MaintenanceRequest.objects.filter(organization=org, status__in=['PENDING', 'ASSIGNED', 'IN_PROGRESS']).count() if org else 0,
+            'pending_moveouts':  MoveOutRequest.objects.filter(organization=org, status__in=['PENDING', 'INSPECTION']).count() if org else 0,
+            'pending_transfers': TransferRequest.objects.filter(organization=org, status='PENDING').count() if org else 0,
+            'action_items':      0,  # sum of above — calculate after
         },
         'recent_tenancies': recent_tenancies,
     }

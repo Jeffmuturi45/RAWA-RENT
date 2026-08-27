@@ -1,0 +1,126 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Request Transfer{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+  <div>
+    <h1 class="rw-page-title">Request Transfer</h1>
+    <p class="rw-page-subtitle">
+      Ask the property management office to move you to another unit.
+    </p>
+  </div>
+</div>
+
+
+<div class="row justify-content-center">
+
+  <div class="col-12 col-lg-8">
+
+    <div class="rw-card">
+
+      <div class="rw-card-header">
+        <h2 class="rw-card-title">
+          <i class="fa fa-right-left me-2"></i>
+          Transfer Request
+        </h2>
+      </div>
+
+
+      <div class="rw-card-body">
+
+        <div class="mb-4 p-3 rounded"
+             style="background:var(--surface-secondary);">
+
+          <div style="
+            font-size:12px;
+            color:var(--text-secondary);
+          ">
+            Current Unit
+          </div>
+
+          <div style="
+            font-size:17px;
+            font-weight:700;
+          ">
+            Unit {{ tenancy.unit.unit_number }}
+          </div>
+
+          <div style="
+            font-size:13px;
+            color:var(--text-secondary);
+          ">
+            {{ tenancy.unit.prop.name }}
+            · KSh {{ tenancy.monthly_rent|floatformat:0 }}/month
+          </div>
+
+        </div>
+
+
+        <div class="alert alert-info">
+
+          <i class="fa fa-circle-info me-2"></i>
+
+          Your request will be reviewed by the property
+          management office. A transfer is not completed
+          until it has been approved and processed by
+          authorized staff.
+
+        </div>
+
+
+        <form method="post">
+
+          {% csrf_token %}
+
+          {% for field in form %}
+
+            <div class="mb-3">
+
+              <label class="form-label fw-semibold">
+                {{ field.label }}
+              </label>
+
+              {{ field }}
+
+              {% for error in field.errors %}
+                <div class="text-danger small mt-1">
+                  {{ error }}
+                </div>
+              {% endfor %}
+
+            </div>
+
+          {% endfor %}
+
+
+          <div class="d-flex gap-2 mt-4">
+
+            <a href="{% url 'portal:dashboard' %}"
+               class="rw-btn rw-btn-ghost">
+              Cancel
+            </a>
+
+            <button type="submit"
+                    class="rw-btn rw-btn-primary">
+
+              <i class="fa fa-paper-plane me-2"></i>
+
+              Submit Transfer Request
+
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
