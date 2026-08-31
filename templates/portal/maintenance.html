@@ -1,0 +1,310 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Maintenance{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+    <div>
+        <h1 class="rw-page-title">Maintenance Requests</h1>
+        <p class="rw-page-subtitle">
+            Report a repair or maintenance issue in your unit.
+        </p>
+    </div>
+</div>
+
+{% if tenancy %}
+
+<!-- New Maintenance Request -->
+
+<div class="rw-card mb-4">
+    <div class="rw-card-header">
+        <h2 class="rw-card-title">
+            <i class="fa fa-plus-circle me-2"></i>
+            New Request
+        </h2>
+    </div>
+    
+<div class="rw-card-body">
+    <form
+        method="post"
+        action="{% url 'portal:maintenance_create' %}"
+        enctype="multipart/form-data"
+    >
+        {% csrf_token %}
+
+        <div class="row g-3">
+
+            <!-- Category -->
+            <div class="col-12 col-md-4">
+                <label class="rw-label">
+                    Category
+                    <span style="color:var(--danger);">*</span>
+                </label>
+
+                <select
+                    name="category"
+                    class="rw-select"
+                    required
+                >
+                    <option value="">— Select Category —</option>
+
+                    {% for val, label in categories %}
+                    <option value="{{ val }}">
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+
+            <!-- Priority -->
+            <div class="col-12 col-md-4">
+                <label class="rw-label">
+                    Priority
+                    <span style="color:var(--danger);">*</span>
+                </label>
+
+                <select
+                    name="priority"
+                    class="rw-select"
+                    required
+                >
+                    {% for val, label in priorities %}
+                    <option
+                        value="{{ val }}"
+                        {% if val == 'MEDIUM' %}selected{% endif %}
+                    >
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+
+            <!-- Title -->
+            <div class="col-12 col-md-4">
+                <label class="rw-label">
+                    Title
+                    <span style="color:var(--danger);">*</span>
+                </label>
+
+                <input
+                    type="text"
+                    name="title"
+                    class="rw-input"
+                    placeholder="e.g. Leaking tap in kitchen"
+                    required
+                    maxlength="255"
+                >
+            </div>
+
+
+            <!-- Description -->
+            <div class="col-12">
+                <label class="rw-label">
+                    Description
+                    <span style="color:var(--danger);">*</span>
+                </label>
+
+                <textarea
+                    name="description"
+                    class="rw-input"
+                    rows="4"
+                    placeholder="Describe the issue in detail — when it started, where it is located, and how serious it is."
+                    required
+                ></textarea>
+            </div>
+
+
+            <!-- Photo -->
+            <div class="col-12 col-md-6">
+                <label class="rw-label">
+                    Photo
+                    <span style="font-size:12px;color:var(--text-secondary);">
+                        (optional)
+                    </span>
+                </label>
+
+                <input
+                    type="file"
+                    name="photo"
+                    class="rw-input"
+                    accept="image/*"
+                >
+
+                <div
+                    style="
+                        font-size:11px;
+                        color:var(--text-secondary);
+                        margin-top:4px;
+                    "
+                >
+                    Attach a photo of the maintenance problem if available.
+                </div>
+            </div>
+
+
+            <!-- Submit -->
+            <div class="col-12 col-md-6 d-flex align-items-end">
+                <button
+                    type="submit"
+                    class="rw-btn rw-btn-primary w-100"
+                >
+                    <i class="fa fa-paper-plane me-1"></i>
+                    Submit Request
+                </button>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+</div>
+
+{% else %}
+
+<!-- No Active Tenancy -->
+
+<div class="rw-card mb-4">
+    <div class="rw-empty">
+        <div class="rw-empty-icon">
+            <i class="fa fa-house"></i>
+        </div>
+
+    <div class="rw-empty-title">
+        No Active Tenancy
+    </div>
+
+    <div class="rw-empty-text">
+        You need an active tenancy before you can submit a maintenance request.
+    </div>
+</div>
+
+</div>
+
+{% endif %}
+
+<!-- Existing Maintenance Requests -->
+
+{% if requests %}
+
+<div class="rw-card">
+
+<div class="rw-card-header">
+    <h2 class="rw-card-title">
+        My Requests
+    </h2>
+</div>
+
+
+<div class="rw-table-wrapper">
+
+    <table class="rw-table">
+
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Title</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+
+
+        <tbody>
+
+            {% for mr in requests %}
+
+            <tr>
+
+                <!-- Date -->
+                <td style="font-size:13px;">
+                    {{ mr.created_at|date:"d M Y" }}
+                </td>
+
+
+                <!-- Category -->
+                <td style="font-size:13px;">
+                    {{ mr.get_category_display }}
+                </td>
+
+
+                <!-- Title -->
+                <td style="font-weight:600;">
+                    {{ mr.title }}
+                </td>
+
+
+                <!-- Priority -->
+                <td>
+                    <span class="rw-badge {{ mr.get_priority_badge }}">
+                        {{ mr.get_priority_display }}
+                    </span>
+                </td>
+
+
+                <!-- Status -->
+                <td>
+                    <span class="rw-badge {{ mr.get_status_badge }}">
+                        {{ mr.get_status_display }}
+                    </span>
+                </td>
+
+
+                <!-- Action -->
+                <td>
+                    <a
+                        href="{% url 'portal:maintenance_detail' mr.pk %}"
+                        class="rw-btn rw-btn-ghost rw-btn-sm"
+                    >
+                        View
+                        <i class="fa fa-chevron-right ms-1"></i>
+                    </a>
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+</div>
+
+{% else %}
+
+<!-- No Requests -->
+
+<div class="rw-card">
+
+<div class="rw-empty">
+
+    <div class="rw-empty-icon">
+        <i class="fa fa-screwdriver-wrench"></i>
+    </div>
+
+    <div class="rw-empty-title">
+        No Maintenance Requests Yet
+    </div>
+
+    <div class="rw-empty-text">
+        {% if tenancy %}
+        Use the form above to report a maintenance issue in your unit.
+        {% else %}
+        Your maintenance requests will appear here.
+        {% endif %}
+    </div>
+
+</div>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

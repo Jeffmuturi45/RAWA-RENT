@@ -1,11 +1,14 @@
 import uuid
-from django.db import models
+from django.core.checks import messages
+from django.db import models, transaction
 from django.utils import timezone
-
+from django.db.models import Q
+from requests import request
 
 # ──────────────────────────────────────────────────────────────
 # MAINTENANCE REQUEST
 # ──────────────────────────────────────────────────────────────
+
 
 class MaintenanceRequest(models.Model):
 
@@ -122,53 +125,84 @@ class TransferRequest(models.Model):
         APPROVED = 'APPROVED',  'Approved'
         REJECTED = 'REJECTED',  'Rejected'
         CANCELLED = 'CANCELLED', 'Cancelled'
+        COMPLETED = 'COMPLETED', 'Completed'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     organization = models.ForeignKey(
         'organizations.Organization', on_delete=models.PROTECT,
-        related_name='transfer_requests')
+        related_name='transfer_requests'
+    )
     tenant = models.ForeignKey(
         'tenants.Tenant', on_delete=models.PROTECT,
-        related_name='transfer_requests')
+        related_name='transfer_requests'
+    )
     tenancy = models.ForeignKey(
         'tenancies.Tenancy', on_delete=models.PROTECT,
-        related_name='transfer_requests')
+        related_name='transfer_requests'
+    )
     requested_unit = models.ForeignKey(
         'properties.Unit', on_delete=models.PROTECT,
-        related_name='transfer_requests')
+        related_name='transfer_requests'
+    )
 
     # Effective = end of current month; tenant starts new unit 1st of next month
     requested_date = models.DateField()
     effective_date = models.DateField(
         null=True, blank=True,
-        help_text='Last day of current month — new tenancy starts 1st of next month')
+        help_text='Last day of current month — new tenancy starts 1st of next month'
+    )
     reason = models.TextField()
 
     # Deposit carry-over (calculated when request is created)
     old_deposit = models.DecimalField(
-        max_digits=12, decimal_places=2, default=0)
+        max_digits=12, decimal_places=2, default=0
+    )
     new_deposit = models.DecimalField(
-        max_digits=12, decimal_places=2, default=0)
+        max_digits=12, decimal_places=2, default=0
+    )
     deposit_difference = models.DecimalField(
         max_digits=12, decimal_places=2, default=0,
-        help_text='Positive = tenant must top up. Negative = credit/refund.')
+        help_text='Positive = tenant must top up. Negative = credit/refund.'
+    )
 
     status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.PENDING)
+        max_length=20, choices=Status.choices, default=Status.PENDING
+    )
     staff_notes = models.TextField(blank=True)
 
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reviewed_by = models.ForeignKey(
         'accounts.User', on_delete=models.PROTECT,
-        related_name='transfer_requests_reviewed', null=True, blank=True)
+        related_name='transfer_requests_reviewed', null=True, blank=True
+    )
     rejection_note = models.TextField(blank=True)
+
+    # Track when the transfer was actually completed (for cooldown)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    # Optional: track if this was admin-approved to bypass cooldown
+    bypassed_cooldown = models.BooleanField(default=False)
+    bypassed_by = models.ForeignKey(
+        'accounts.User', on_delete=models.PROTECT,
+        related_name='transfer_requests_bypassed', null=True, blank=True
+    )
+    bypassed_at = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
+        # For PostgreSQL - supports conditional unique constraint
+        # For MySQL, this constraint will be ignored/skipped during migration
+        # constraints = [
+        #     models.UniqueConstraint(
+        #         fields=['tenancy'],
+        #         condition=Q(status='PENDING'),
+        #         name='one_pending_transfer_per_tenancy'
+        #     )
+        # ]
 
     def __str__(self):
         return (
@@ -177,18 +211,49 @@ class TransferRequest(models.Model):
             f'{self.requested_unit.unit_number}'
         )
 
+    def can_transfer(self):
+        """Check if this tenant can request another transfer."""
+        if self.status in [self.Status.PENDING, self.Status.APPROVED]:
+            return False
+
+        # If completed, check cooldown
+        if self.status == self.Status.COMPLETED:
+            completed_date = self.completed_at or self.updated_at
+            if completed_date:
+                days_since = (timezone.now() - completed_date).days
+                return days_since >= 30
+
+        # Rejected/Cancelled requests don't block new requests
+        return True
+
+    def days_remaining_for_transfer(self):
+        """Return days remaining in cooldown period, or 0 if eligible."""
+        if self.status != self.Status.COMPLETED:
+            return 0
+
+        completed_date = self.completed_at or self.updated_at
+        if not completed_date:
+            return 0
+
+        days_since = (timezone.now() - completed_date).days
+        if days_since >= 30:
+            return 0
+
+        return 30 - days_since
+
     def get_status_badge(self):
         return {
             self.Status.PENDING:   'rw-badge-warning',
             self.Status.APPROVED:  'rw-badge-success',
             self.Status.REJECTED:  'rw-badge-danger',
             self.Status.CANCELLED: 'rw-badge-dark',
+            self.Status.COMPLETED: 'rw-badge-info',
         }.get(self.status, 'rw-badge-dark')
-
 
 # ──────────────────────────────────────────────────────────────
 # MOVE-OUT REQUEST
 # ──────────────────────────────────────────────────────────────
+
 
 class MoveOutRequest(models.Model):
     """

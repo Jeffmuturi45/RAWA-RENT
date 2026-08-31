@@ -7,6 +7,11 @@ urlpatterns = [
     # ── Dashboard ──────────────────────────────────────────
     path('',                            views.portal_dashboard,
          name='dashboard'),
+    path(
+        'profile/',
+        views.portal_profile,
+        name='profile'
+    ),
 
     # ── Statement ──────────────────────────────────────────
     path('statement/',                  views.portal_statement,
@@ -23,6 +28,15 @@ urlpatterns = [
          views.portal_receipt_detail,    name='receipt_detail'),
     path('receipts/<uuid:pk>/pdf/',
          views.portal_receipt_pdf,       name='receipt_pdf'),
+
+    path('payments/proof/<uuid:charge_pk>/upload/',
+         views.portal_payment_proof_upload,
+         name='payment_proof_upload'),
+
+    # Move-out proof upload
+    path('moveout/proof/upload/',
+         views.portal_moveout_proof_upload,
+         name='moveout_proof_upload'),
 
     # ── Deposit ────────────────────────────────────────────
     path('deposit/',                    views.portal_deposit,           name='deposit'),

@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block title %}Transfer Requests{% endblock %}
+
+{% block page_title %}Transfer Requests{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+
+    <div>
+        <h1 class="rw-page-title">Transfer Requests</h1>
+
+        <p class="rw-page-subtitle">
+            {{ pending_count }} pending transfer request{{ pending_count|pluralize }}
+        </p>
+    </div>
+
+</div>
+
+<form method="get" class="mb-4">
+
+    <div style="
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    ">
+
+        <select name="status" class="rw-select" style="max-width: 200px;">
+
+            <option value="">All statuses</option>
+
+            {% for status in status_options %}
+            <option value="{{ status.value }}" {% if status.selected %}selected{% endif %}>
+                {{ status.label }}
+            </option>
+            {% endfor %}
+
+        </select>
+
+
+
+        <button type="submit" class="rw-btn rw-btn-outline">
+            <i class="fa fa-filter me-1"></i>
+            Filter
+        </button>
+
+
+        {% if selected_status %}
+
+        <a href="{% url 'finance:transfer_request_list' %}" class="rw-btn rw-btn-ghost">
+            Clear
+        </a>
+
+        {% endif %}
+
+    </div>
+
+</form>
+
+<div class="rw-card">
+
+    <div class="rw-table-wrapper">
+
+
+        {% if requests %}
+
+
+        <table class="rw-table">
+
+            <thead>
+
+                <tr>
+                    <th>Date</th>
+                    <th>Tenant</th>
+                    <th>Property</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Effective Date</th>
+                    <th>Deposit Difference</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+
+                {% for tr in requests %}
+
+                <tr>
+
+
+                    <td style="font-size: 13px;">
+
+                        {{ tr.created_at|date:"d M Y" }}
+
+                    </td>
+
+
+                    <td style="font-weight: 600;">
+
+                        {{ tr.tenant.full_name }}
+
+                    </td>
+
+
+                    <td style="font-size: 13px;">
+
+                        {{ tr.tenancy.unit.prop.name }}
+
+                    </td>
+
+
+                    <td>
+
+                        <span style="font-weight: 600;">
+                            {{ tr.tenancy.unit.unit_number }}
+                        </span>
+
+                    </td>
+
+
+                    <td>
+
+                        <span style="font-weight: 600;">
+                            {{ tr.requested_unit.unit_number }}
+                        </span>
+
+                    </td>
+
+
+                    <td style="font-size: 13px;">
+
+                        {% if tr.effective_date %}
+
+                        {{ tr.effective_date|date:"d M Y" }}
+
+                        {% elif tr.requested_date %}
+
+                        {{ tr.requested_date|date:"d M Y" }}
+
+                        {% else %}
+
+                        —
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+                        {% if tr.deposit_difference > 0 %}
+
+                        <span style="
+                                color: var(--danger);
+                                font-weight: 600;
+                            ">
+                            + KSh {{ tr.deposit_difference|floatformat:0 }}
+                        </span>
+
+                        {% elif tr.deposit_difference < 0 %} <span style="
+                                color: var(--success);
+                                font-weight: 600;
+                            ">
+                            KSh {{ tr.deposit_difference|floatformat:0 }}
+                            </span>
+
+                            {% else %}
+
+                            <span style="
+                                color: var(--text-secondary);
+                                font-weight: 600;
+                            ">
+                                KSh 0
+                            </span>
+
+                            {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+                        <span class="rw-badge {{ tr.get_status_badge }}">
+                            {{ tr.get_status_display }}
+                        </span>
+
+                    </td>
+
+
+                    <td>
+
+                        <a href="{% url 'finance:transfer_request_detail' tr.pk %}"
+                            class="rw-btn rw-btn-ghost rw-btn-sm">
+                            {% if tr.status == 'PENDING' %}
+                            Review
+                            {% else %}
+                            View
+                            {% endif %}
+                        </a>
+
+                    </td>
+
+
+                </tr>
+
+                {% endfor %}
+
+
+            </tbody>
+
+        </table>
+
+
+        {% else %}
+
+
+        <div class="rw-empty">
+
+            <div class="rw-empty-icon">
+                <i class="fa fa-right-left"></i>
+            </div>
+
+            <div class="rw-empty-title">
+                No transfer requests
+            </div>
+
+            <div class="rw-empty-text">
+
+                {% if selected_status %}
+                There are no transfer requests matching the selected status.
+                {% else %}
+                Tenant transfer requests will appear here.
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        {% endif %}
+
+
+    </div>
+
+</div>
+
+{% endblock %}

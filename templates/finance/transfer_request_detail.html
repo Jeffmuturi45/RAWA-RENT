@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exchange-alt me-2"></i>
+                            Transfer Request Detail
+                        </h5>
+                        <span class="badge {{ tr.get_status_badge }} fs-6">
+                            {{ tr.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Tenant Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">Tenant Information</h6>
+                            <p><strong>Name:</strong> {{ tr.tenant.full_name }}</p>
+                            <p><strong>Email:</strong> {{ tr.tenant.user.email }}</p>
+                            <p><strong>Phone:</strong> {{ tr.tenant.phone|default:"—" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">Request Details</h6>
+                            <p><strong>Requested Date:</strong> {{ tr.requested_date|date:"d M Y" }}</p>
+                            <p><strong>Effective Date:</strong> {{ tr.effective_date|date:"d M Y"|default:"Pending" }}</p>
+                            <p><strong>Created:</strong> {{ tr.created_at|date:"d M Y H:i" }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Unit Transfer Details -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-2">Current Unit</h6>
+                                    <h5>{{ tr.tenancy.unit.unit_number }}</h5>
+                                    <p class="mb-1">
+                                        <strong>Property:</strong> {{ tr.tenancy.unit.prop.name }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Monthly Rent:</strong> 
+                                        KSh {{ tr.tenancy.unit.rent_amount|floatformat:0 }}
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Deposit:</strong> 
+                                        KSh {{ tr.old_deposit|floatformat:0 }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-2">Requested Unit</h6>
+                                    <h5>{{ tr.requested_unit.unit_number }}</h5>
+                                    <p class="mb-1">
+                                        <strong>Property:</strong> {{ tr.requested_unit.prop.name }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Monthly Rent:</strong> 
+                                        KSh {{ tr.requested_unit.rent_amount|floatformat:0 }}
+                                    </p>
+                                    <p class="mb-0">
+                                        <strong>Deposit:</strong> 
+                                        KSh {{ tr.new_deposit|floatformat:0 }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Deposit Difference -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card 
+                                {% if tr.deposit_difference > 0 %}border-warning
+                                {% elif tr.deposit_difference < 0 %}border-success
+                                {% else %}border-secondary{% endif %}">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-2">Deposit Adjustment</h6>
+                                    {% if tr.deposit_difference > 0 %}
+                                        <h5 class="text-warning">
+                                            <i class="fas fa-arrow-up me-1"></i>
+                                            Tenant must top up KSh {{ tr.deposit_difference|floatformat:0 }}
+                                        </h5>
+                                    {% elif tr.deposit_difference < 0 %}
+                                        <h5 class="text-success">
+                                            <i class="fas fa-arrow-down me-1"></i>
+                                            Tenant receives credit of KSh {{ tr.deposit_difference|floatformat:0|slice:"1:" }}
+                                        </h5>
+                                    {% else %}
+                                        <h5 class="text-secondary">
+                                            <i class="fas fa-equals me-1"></i>
+                                            No deposit adjustment required
+                                        </h5>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reason -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-2">Reason for Transfer</h6>
+                            <div class="p-3 bg-light rounded">
+                                {{ tr.reason|linebreaks|default:"No reason provided." }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Staff Notes -->
+                    {% if tr.staff_notes %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-2">Staff Notes</h6>
+                            <div class="p-3 bg-light rounded">
+                                {{ tr.staff_notes|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Admin Actions -->
+                    {% if tr.status == 'PENDING' %}
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-tasks me-2"></i>
+                                        Admin Action Required
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <form method="post" id="transferActionForm">
+                                        {% csrf_token %}
+                                        
+                                        <!-- Approval Section -->
+                                        <div class="mb-3">
+                                            <h6>Approve Transfer</h6>
+                                            <p class="text-muted small">
+                                                This will:
+                                                <ul class="text-muted small">
+                                                    <li>End the current tenancy on {{ tr.effective_date|date:"d M Y" }}</li>
+                                                    <li>Create a new tenancy starting {{ tr.effective_date|date:"d M Y" }} + 1 day</li>
+                                                    <li>Transfer the deposit to the new unit</li>
+                                                    <li>Create a deposit top-up charge if required</li>
+                                                    <li>Mark the current unit as VACANT</li>
+                                                    <li>Mark the new unit as OCCUPIED</li>
+                                                </ul>
+                                            </p>
+                                            <button type="submit" name="action" value="approve" 
+                                                    class="btn btn-success"
+                                                    onclick="return confirm('Are you sure you want to approve this transfer? This will end the current tenancy and create a new one.');">
+                                                <i class="fas fa-check me-1"></i> Approve Transfer
+                                            </button>
+                                        </div>
+
+                                        <hr>
+
+                                        <!-- Rejection Section -->
+                                        <div class="mb-3">
+                                            <h6>Reject Transfer</h6>
+                                            <div class="mb-2">
+                                                <label for="rejection_note" class="form-label">Rejection Reason</label>
+                                                <textarea name="rejection_note" id="rejection_note" 
+                                                          class="form-control" rows="3"
+                                                          placeholder="Provide a reason for rejection..."></textarea>
+                                            </div>
+                                            <button type="submit" name="action" value="reject" 
+                                                    class="btn btn-danger"
+                                                    onclick="return confirm('Are you sure you want to reject this transfer request?');">
+                                                <i class="fas fa-times me-1"></i> Reject Transfer
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% elif tr.status == 'APPROVED' %}
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                This transfer was approved on {{ tr.reviewed_at|date:"d M Y H:i" }} 
+                                by {{ tr.reviewed_by.get_full_name|default:tr.reviewed_by.email }}.
+                            </div>
+                        </div>
+                    </div>
+                    {% elif tr.status == 'REJECTED' %}
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert alert-danger">
+                                <i class="fas fa-times-circle me-2"></i>
+                                This transfer was rejected on {{ tr.reviewed_at|date:"d M Y H:i" }} 
+                                by {{ tr.reviewed_by.get_full_name|default:tr.reviewed_by.email }}.
+                                {% if tr.rejection_note %}
+                                <br><strong>Reason:</strong> {{ tr.rejection_note }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Cooldown Information -->
+                    {% if tr.bypassed_cooldown %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-clock me-2"></i>
+                                <strong>Admin Override:</strong> 
+                                This transfer bypassed the 30-day cooldown by 
+                                {{ tr.bypassed_by.get_full_name|default:tr.bypassed_by.email }} 
+                                on {{ tr.bypassed_at|date:"d M Y H:i" }}.
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Navigation -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <a href="{% url 'finance:transfer_request_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Back to List
+                            </a>
+                            {% if tr.status == 'PENDING' %}
+                            <a href="{% url 'finance:transfer_request_list' %}" class="btn btn-outline-secondary float-end">
+                                <i class="fas fa-sync me-1"></i> Refresh
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh the page every 60 seconds if pending
+    {% if tr.status == 'PENDING' %}
+    setTimeout(function() {
+        location.reload();
+    }, 60000);
+    {% endif %}
+</script>
+{% endblock %}

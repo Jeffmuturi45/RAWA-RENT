@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}Maintenance Requests{% endblock %}
+
+{% block page_title %}Maintenance Requests{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+    <div>
+        <h1 class="rw-page-title">Maintenance Requests</h1>
+        <p class="rw-page-subtitle">
+            {{ open_count }} open · {{ urgent_count }} urgent
+        </p>
+    </div>
+</div>
+
+<!-- Filters -->
+
+<form method="get" class="mb-4">
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+
+    <!-- Status filter -->
+    <select name="status" class="rw-select" style="max-width:160px;">
+        <option value="">All statuses</option>
+
+        {% for val, label in status_choices %}
+        <option
+            value="{{ val }}"
+            {% if selected_status == val %}selected{% endif %}
+        >
+            {{ label }}
+        </option>
+        {% endfor %}
+    </select>
+
+
+    <!-- Priority filter -->
+    <select name="priority" class="rw-select" style="max-width:160px;">
+        <option value="">All priorities</option>
+
+        {% for val, label in priority_choices %}
+        <option
+            value="{{ val }}"
+            {% if selected_priority == val %}selected{% endif %}
+        >
+            {{ label }}
+        </option>
+        {% endfor %}
+    </select>
+
+
+    <!-- Property filter -->
+    <select name="property" class="rw-select" style="max-width:200px;">
+        <option value="">All properties</option>
+
+        {% for p in properties %}
+        <option
+            value="{{ p.pk }}"
+            {% if selected_property == p.pk|stringformat:"s" %}selected{% endif %}
+        >
+            {{ p.name }}
+        </option>
+        {% endfor %}
+    </select>
+
+
+    <!-- Filter button -->
+    <button type="submit" class="rw-btn rw-btn-outline">
+        <i class="fa fa-filter"></i>
+        Filter
+    </button>
+
+
+    <!-- Clear filters -->
+    {% if selected_status or selected_priority or selected_property %}
+    <a
+        href="{% url 'finance:maintenance_list' %}"
+        class="rw-btn rw-btn-ghost"
+    >
+        Clear
+    </a>
+    {% endif %}
+
+</div>
+
+</form>
+
+<!-- Requests table -->
+
+<div class="rw-card">
+    <div class="rw-table-wrapper">
+
+    {% if requests %}
+
+    <table class="rw-table">
+
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Tenant</th>
+                <th>Unit</th>
+                <th>Category</th>
+                <th>Title</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+
+
+        <tbody>
+
+            {% for mr in requests %}
+
+            <tr>
+
+                <td style="font-size:13px;">
+                    {{ mr.created_at|date:"d M Y" }}
+                </td>
+
+
+                <td style="font-weight:600;">
+                    {{ mr.tenant.full_name }}
+                </td>
+
+
+                <td style="font-size:13px;">
+                    {{ mr.tenancy.unit.unit_number }}
+                </td>
+
+
+                <td style="font-size:13px;">
+                    {{ mr.get_category_display }}
+                </td>
+
+
+                <td>
+                    {{ mr.title|truncatechars:40 }}
+                </td>
+
+
+                <td>
+                    <span class="rw-badge {{ mr.get_priority_badge }}">
+                        {{ mr.get_priority_display }}
+                    </span>
+                </td>
+
+
+                <td>
+                    <span class="rw-badge {{ mr.get_status_badge }}">
+                        {{ mr.get_status_display }}
+                    </span>
+                </td>
+
+
+                <td>
+                    <a
+                        href="{% url 'finance:maintenance_detail' mr.pk %}"
+                        class="rw-btn rw-btn-ghost rw-btn-sm"
+                    >
+                        Manage
+                    </a>
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+
+    {% else %}
+
+    <div class="rw-empty">
+
+        <div class="rw-empty-icon">
+            <i class="fa fa-wrench"></i>
+        </div>
+
+        <div class="rw-empty-title">
+            No maintenance requests
+        </div>
+
+        <div class="rw-empty-text">
+            Tenant maintenance requests will appear here.
+        </div>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,970 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Move-Out — {{ mor.tenant.full_name }}
+{% endblock %}
+
+{% block page_title %}
+Move-Out Request
+{% endblock %}
+
+{% block content %}
+
+<!-- PAGE HEADER -->
+
+<div class="rw-page-header">
+<div>
+    <h1 class="rw-page-title">
+        {{ mor.tenant.full_name }}
+    </h1>
+
+    <p class="rw-page-subtitle">
+        {{ mor.tenancy.unit.prop.name }}
+        {{ mor.tenancy.unit.unit_number }}
+        Requested {{ mor.requested_moveout_date }}
+    </p>
+</div>
+
+<div style="display:flex; gap:8px; align-items:center;">
+
+    <span class="rw-badge {{ mor.get_status_badge }}">
+        {{ mor.get_status_display }}
+    </span>
+
+    <a href="{% url 'finance:moveout_request_list' %}"
+       class="rw-btn rw-btn-ghost rw-btn-sm">
+
+        <i class="fa fa-arrow-left"></i>
+        Back
+
+    </a>
+
+</div>
+
+</div>
+
+<!-- =====================================================
+     PROGRESS STEPPER
+===================================================== -->
+
+<div class="rw-card mb-4">
+
+<div class="rw-card-body">
+
+    <div style="
+        display:flex;
+        align-items:flex-start;
+        gap:0;
+        overflow-x:auto;
+    ">
+
+
+        <!-- STEP 1 -->
+        <div style="
+            flex:1;
+            text-align:center;
+            min-width:120px;
+        ">
+
+            <div style="
+                width:36px;
+                height:36px;
+                border-radius:50%;
+                margin:0 auto 8px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                background:var(--brand-primary);
+                color:white;
+            ">
+
+                <i class="fa fa-inbox"></i>
+
+            </div>
+
+            <div style="
+                font-size:12px;
+                font-weight:600;
+                color:var(--brand-primary);
+            ">
+
+                Request Received
+
+            </div>
+
+        </div>
+
+
+        <!-- STEP 2 -->
+        <div style="
+            flex:1;
+            text-align:center;
+            min-width:120px;
+        ">
+
+            <div style="
+                width:36px;
+                height:36px;
+                border-radius:50%;
+                margin:0 auto 8px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                background:{% if step >= 2 %}var(--brand-primary){% else %}var(--border){% endif %};
+                color:white;
+            ">
+
+                <i class="fa fa-calendar-check"></i>
+
+            </div>
+
+            <div style="
+                font-size:12px;
+                font-weight:600;
+                color:{% if step >= 2 %}var(--brand-primary){% else %}var(--text-secondary){% endif %};
+            ">
+
+                Inspection
+
+            </div>
+
+        </div>
+
+
+        <!-- STEP 3 -->
+        <div style="
+            flex:1;
+            text-align:center;
+            min-width:120px;
+        ">
+
+            <div style="
+                width:36px;
+                height:36px;
+                border-radius:50%;
+                margin:0 auto 8px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                background:{% if step >= 3 %}var(--brand-primary){% else %}var(--border){% endif %};
+                color:white;
+            ">
+
+                <i class="fa fa-clipboard-check"></i>
+
+            </div>
+
+            <div style="
+                font-size:12px;
+                font-weight:600;
+                color:{% if step >= 3 %}var(--brand-primary){% else %}var(--text-secondary){% endif %};
+            ">
+
+                Checklist Complete
+
+            </div>
+
+        </div>
+
+
+        <!-- STEP 4 -->
+        <div style="
+            flex:1;
+            text-align:center;
+            min-width:120px;
+        ">
+
+            <div style="
+                width:36px;
+                height:36px;
+                border-radius:50%;
+                margin:0 auto 8px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                background:{% if step >= 4 %}var(--brand-primary){% else %}var(--border){% endif %};
+                color:white;
+            ">
+
+                <i class="fa fa-gavel"></i>
+
+            </div>
+
+            <div style="
+                font-size:12px;
+                font-weight:600;
+                color:{% if step >= 4 %}var(--brand-primary){% else %}var(--text-secondary){% endif %};
+            ">
+
+                Decision
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+</div>
+
+<!-- =====================================================
+     MAIN CONTENT
+===================================================== -->
+
+<div class="row g-4">
+
+<!-- =================================================
+     LEFT COLUMN — CHECKLIST
+================================================= -->
+
+<div class="col-12 col-md-7">
+
+
+    <!-- INSPECTION CHECKLIST -->
+
+    <div class="rw-card mb-4">
+
+        <div class="rw-card-header">
+
+            <h2 class="rw-card-title">
+                <i class="fa fa-clipboard-check me-2"></i>
+                Inspection Checklist
+            </h2>
+
+            <span style="
+                font-size:13px;
+                color:var(--text-secondary);
+            ">
+
+                {{ progress.0 }}/{{ progress.1 }} checked
+
+            </span>
+
+        </div>
+
+
+        <div class="rw-card-body">
+
+
+            <!-- PROGRESS BAR -->
+
+            <div style="
+                background:var(--border);
+                border-radius:100px;
+                height:8px;
+                margin-bottom:20px;
+            ">
+
+                <div style="
+                    background:var(--brand-primary);
+                    border-radius:100px;
+                    height:8px;
+                    width:{% widthratio progress.0 progress.1 100 %}%;
+                "></div>
+
+            </div>
+
+
+            <!-- =====================================
+                 EDITABLE CHECKLIST
+            ====================================== -->
+
+            {% if mor.status == 'INSPECTION' %}
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+
+                    {% for item in checklist_items %}
+
+                        <div style="
+                            display:flex;
+                            align-items:center;
+                            justify-content:space-between;
+                            padding:12px 0;
+                            border-bottom:1px solid var(--border);
+                        ">
+
+
+                            <!-- ITEM NAME -->
+
+                            <div style="
+                                font-weight:600;
+                                font-size:14px;
+                            ">
+
+                                {{ item.label }}
+
+                            </div>
+
+
+                            <!-- BUTTONS -->
+
+                            <div style="
+                                display:flex;
+                                gap:8px;
+                            ">
+
+
+                                <!-- OK -->
+
+                                <label style="cursor:pointer;">
+
+                                    <input
+                                        type="radio"
+                                        name="{{ item.field }}"
+                                        value="ok"
+                                        {% if item.status == 'ok' %}checked{% endif %}
+                                        style="display:none;"
+                                        id="{{ item.field }}_ok"
+                                    >
+
+                                    <div
+                                        class="rw-btn rw-btn-sm {% if item.status == 'ok' %}rw-btn-success{% else %}rw-btn-outline{% endif %}"
+                                        onclick="document.getElementById('{{ item.field }}_ok').checked = true;"
+                                    >
+
+                                        <i class="fa fa-check me-1"></i>
+                                        OK
+
+                                    </div>
+
+                                </label>
+
+
+                                <!-- ISSUE -->
+
+                                <label style="cursor:pointer;">
+
+                                    <input
+                                        type="radio"
+                                        name="{{ item.field }}"
+                                        value="issue"
+                                        {% if item.status == 'issue' %}checked{% endif %}
+                                        style="display:none;"
+                                        id="{{ item.field }}_issue"
+                                    >
+
+                                    <div
+                                        class="rw-btn rw-btn-sm {% if item.status == 'issue' %}rw-btn-danger{% else %}rw-btn-outline{% endif %}"
+                                        onclick="document.getElementById('{{ item.field }}_issue').checked = true;"
+                                    >
+
+                                        <i class="fa fa-xmark me-1"></i>
+                                        Issue
+
+                                    </div>
+
+                                </label>
+
+
+                            </div>
+
+                        </div>
+
+                    {% endfor %}
+
+
+                    <!-- INSPECTOR NOTES -->
+
+                    <div class="mt-3">
+
+                        <label class="rw-label">
+                            Inspector Notes
+                        </label>
+
+                        <textarea
+                            name="insp_notes"
+                            class="rw-input"
+                            rows="3"
+                        >{{ mor.insp_notes }}</textarea>
+
+                    </div>
+
+
+                    <!-- SAVE -->
+
+                    <div class="mt-3">
+
+                        <button
+                            type="submit"
+                            name="action"
+                            value="save_checklist"
+                            class="rw-btn rw-btn-primary"
+                        >
+
+                            <i class="fa fa-save me-1"></i>
+                            Save Checklist
+
+                        </button>
+
+                    </div>
+
+
+                </form>
+
+
+            <!-- =====================================
+                 READ ONLY CHECKLIST
+            ====================================== -->
+
+            {% else %}
+
+
+                {% for item in checklist_items %}
+
+                    <div style="
+                        display:flex;
+                        align-items:center;
+                        gap:12px;
+                        padding:12px 0;
+                        border-bottom:1px solid var(--border);
+                    ">
+
+
+                        <!-- STATUS ICON -->
+
+                        <div style="
+                            width:28px;
+                            height:28px;
+                            border-radius:50%;
+                            flex-shrink:0;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            background:{% if item.status == 'ok' %}var(--success){% elif item.status == 'issue' %}var(--danger){% else %}var(--border){% endif %};
+                            color:white;
+                            font-size:12px;
+                        ">
+
+                            {% if item.status == 'ok' %}
+
+                                <i class="fa fa-check"></i>
+
+                            {% elif item.status == 'issue' %}
+
+                                <i class="fa fa-xmark"></i>
+
+                            {% else %}
+
+                                <i class="fa fa-clock"></i>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- LABEL -->
+
+                        <div style="
+                            font-weight:600;
+                            font-size:14px;
+                        ">
+
+                            {{ item.label }}
+
+                        </div>
+
+
+                        <!-- STATUS -->
+
+                        <div style="
+                            margin-left:auto;
+                            font-size:12px;
+                            color:{% if item.status == 'ok' %}var(--success){% elif item.status == 'issue' %}var(--danger){% else %}var(--text-secondary){% endif %};
+                        ">
+
+                            {% if item.status == 'ok' %}
+
+                                OK
+
+                            {% elif item.status == 'issue' %}
+
+                                Issue
+
+                            {% else %}
+
+                                Pending
+
+                            {% endif %}
+
+                        </div>
+
+
+                    </div>
+
+                {% endfor %}
+
+
+            {% endif %}
+
+
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         ACTIONS — PENDING
+    ================================================= -->
+
+    {% if mor.status == 'PENDING' %}
+
+        <div class="rw-card"
+             style="border:2px solid var(--brand-primary);">
+
+            <div class="rw-card-body">
+
+                <form method="post"
+                      style="display:flex; gap:8px;">
+
+                    {% csrf_token %}
+
+
+                    <button
+                        type="submit"
+                        name="action"
+                        value="start_inspection"
+                        class="rw-btn rw-btn-primary"
+                    >
+
+                        <i class="fa fa-magnifying-glass me-1"></i>
+                        Start Inspection
+
+                    </button>
+
+
+                    <button
+                        type="submit"
+                        name="action"
+                        value="reject"
+                        class="rw-btn rw-btn-danger"
+                        onclick="return confirm('Reject this move-out request?')"
+                    >
+
+                        <i class="fa fa-xmark me-1"></i>
+                        Reject
+
+                    </button>
+
+
+                </form>
+
+            </div>
+
+        </div>
+
+
+    <!-- =================================================
+         FINAL DECISION
+    ================================================= -->
+
+    {% elif mor.status == 'INSPECTION' and mor.checklist_complete %}
+
+        <div class="rw-card"
+             style="border:2px solid var(--success);">
+
+
+            <div class="rw-card-header">
+
+                <h2 class="rw-card-title">
+
+                    <i class="fa fa-gavel me-2"></i>
+                    Final Decision
+
+                </h2>
+
+            </div>
+
+
+            <div class="rw-card-body">
+
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+
+                    <!-- DAMAGE DEDUCTIONS -->
+
+                    <div class="mb-3">
+
+                        <label class="rw-label">
+                            Damage Deductions (KSh)
+                        </label>
+
+                        <input
+                            type="number"
+                            name="damage_deductions"
+                            class="rw-input"
+                            value="0"
+                            min="0"
+                            step="0.01"
+                        >
+
+                        <div style="
+                            font-size:12px;
+                            color:var(--text-secondary);
+                            margin-top:4px;
+                        ">
+
+                            Amount to deduct from the deposit for
+                            damages found during inspection.
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ACTION BUTTONS -->
+
+                    <div style="
+                        display:flex;
+                        gap:8px;
+                    ">
+
+
+                        <button
+                            type="submit"
+                            name="action"
+                            value="approve"
+                            class="rw-btn rw-btn-success"
+                            onclick="return confirm('Approve move-out? This will end the tenancy and free the unit.')"
+                        >
+
+                            <i class="fa fa-circle-check me-1"></i>
+                            Approve Move-Out
+
+                        </button>
+
+
+                        <button
+                            type="submit"
+                            name="action"
+                            value="reject"
+                            class="rw-btn rw-btn-danger"
+                            onclick="return confirm('Reject this move-out request?')"
+                        >
+
+                            <i class="fa fa-xmark me-1"></i>
+                            Reject
+
+                        </button>
+
+
+                    </div>
+
+
+                </form>
+
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+
+</div>
+
+
+<!-- =================================================
+     RIGHT SIDEBAR
+================================================= -->
+
+<div class="col-12 col-md-5">
+
+
+    <!-- REQUEST INFO -->
+
+    <div class="rw-card mb-4">
+
+        <div class="rw-card-header">
+
+            <h2 class="rw-card-title">
+                Request Info
+            </h2>
+
+        </div>
+
+
+        <div class="rw-card-body">
+
+
+            <!-- TENANT -->
+
+            <div class="mb-3">
+
+                <div style="
+                    font-size:12px;
+                    color:var(--text-secondary);
+                ">
+
+                    Tenant
+
+                </div>
+
+                <div style="font-weight:600;">
+
+                    {{ mor.tenant.full_name }}
+
+                </div>
+
+            </div>
+
+
+            <!-- UNIT -->
+
+            <div class="mb-3">
+
+                <div style="
+                    font-size:12px;
+                    color:var(--text-secondary);
+                ">
+
+                    Unit
+
+                </div>
+
+                <div style="font-weight:600;">
+
+                    {{ mor.tenancy.unit.prop.name }}
+                    ·
+                    {{ mor.tenancy.unit.unit_number }}
+
+                </div>
+
+            </div>
+
+
+            <!-- TENANCY START -->
+
+            <div class="mb-3">
+
+                <div style="
+                    font-size:12px;
+                    color:var(--text-secondary);
+                ">
+
+                    Tenancy Start
+
+                </div>
+
+                <div style="font-weight:600;">
+
+                    {{ mor.tenancy.start_date }}
+
+                </div>
+
+            </div>
+
+
+            <!-- REQUESTED MOVE OUT -->
+
+            <div class="mb-3">
+
+                <div style="
+                    font-size:12px;
+                    color:var(--text-secondary);
+                ">
+
+                    Requested Move-Out
+
+                </div>
+
+                <div style="font-weight:600;">
+
+                    {{ mor.requested_moveout_date }}
+
+                </div>
+
+            </div>
+
+
+            <!-- REASON -->
+
+            {% if mor.reason %}
+
+                <div>
+
+                    <div style="
+                        font-size:12px;
+                        color:var(--text-secondary);
+                    ">
+
+                        Reason
+
+                    </div>
+
+                    <p style="font-size:13px;">
+
+                        {{ mor.reason }}
+
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+
+            <!-- INSPECTOR NOTES -->
+
+            {% if mor.insp_notes %}
+
+                <div>
+
+                    <div style="
+                        font-size:12px;
+                        color:var(--text-secondary);
+                    ">
+
+                        Inspector Notes
+
+                    </div>
+
+                    <p style="font-size:13px;">
+
+                        {{ mor.insp_notes }}
+
+                    </p>
+
+                </div>
+
+            {% endif %}
+
+
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         DEPOSIT SETTLEMENT
+    ================================================= -->
+
+    {% if mor.deposit_held %}
+
+        <div class="rw-card">
+
+
+            <div class="rw-card-header">
+
+                <h2 class="rw-card-title">
+                    Deposit Settlement
+                </h2>
+
+            </div>
+
+
+            <div class="rw-card-body">
+
+
+                <!-- DEPOSIT HELD -->
+
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    font-size:14px;
+                    margin-bottom:6px;
+                ">
+
+                    <span>
+                        Deposit Held
+                    </span>
+
+                    <span style="font-weight:600;">
+
+                        KSh {{ mor.deposit_held|floatformat:0 }}
+
+                    </span>
+
+                </div>
+
+
+                <!-- ARREARS -->
+
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    font-size:14px;
+                    margin-bottom:6px;
+                    color:var(--danger);
+                ">
+
+                    <span>
+                        Arrears
+                    </span>
+
+                    <span>
+
+                        - KSh {{ mor.outstanding_arrears|floatformat:0 }}
+
+                    </span>
+
+                </div>
+
+
+                <!-- DAMAGE -->
+
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    font-size:14px;
+                    margin-bottom:6px;
+                    color:var(--danger);
+                ">
+
+                    <span>
+                        Damage Deductions
+                    </span>
+
+                    <span>
+
+                        - KSh {{ mor.damage_deductions|floatformat:0 }}
+
+                    </span>
+
+                </div>
+
+
+                <!-- REFUND -->
+
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    font-size:16px;
+                    font-weight:700;
+                    border-top:2px solid var(--border);
+                    padding-top:10px;
+                    margin-top:6px;
+                    color:{% if mor.deposit_refundable > 0 %}var(--success){% else %}var(--danger){% endif %};
+                ">
+
+                    <span>
+                        Refundable
+                    </span>
+
+                    <span>
+
+                        KSh {{ mor.deposit_refundable|floatformat:0 }}
+
+                    </span>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+
+</div>
+
+</div>
+
+{% endblock %}

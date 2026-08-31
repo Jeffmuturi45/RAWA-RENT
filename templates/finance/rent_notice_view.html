@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+
+{% block title %}Review Notice{% endblock %}
+
+{% block page_title %}Review Rent Notice{% endblock %}
+
+{% block nav_payments %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+
+    ```
+    <div>
+        <h1 class="rw-page-title">Review Proof of Payment</h1>
+
+        <p class="rw-page-subtitle">
+            {{ notice.tenancy.tenant.full_name }} —
+            {{ notice.period_start|date:"F Y" }}
+        </p>
+    </div>
+
+    <a href="{% url 'finance:rent_notice_list' %}" class="rw-btn rw-btn-ghost">
+        <i class="fa fa-arrow-left me-1"></i>
+        Back
+    </a>
+    ```
+
+</div>
+
+<div class="row g-4">
+
+    ```
+    <div class="col-12 col-md-7">
+
+
+        <div class="rw-card mb-4">
+
+            <div class="rw-card-header">
+                <h2 class="rw-card-title">Submitted Proof</h2>
+            </div>
+
+
+            <div class="rw-card-body">
+
+                {% if notice.proof_of_payment %}
+
+                {% if notice.proof_of_payment.name|lower|slice:"-3:" == "pdf" %}
+
+                <div style="
+                            border: 1px solid var(--border);
+                            border-radius: 8px;
+                            padding: 20px;
+                            text-align: center;
+                        ">
+
+                    <i class="fa fa-file-pdf" style="
+                                font-size: 48px;
+                                color: var(--danger);
+                                margin-bottom: 12px;
+                                display: block;
+                            "></i>
+
+                    <a href="{{ notice.proof_of_payment.url }}" target="_blank" class="rw-btn rw-btn-outline">
+                        <i class="fa fa-eye me-1"></i>
+                        View PDF
+                    </a>
+
+                </div>
+
+                {% else %}
+
+                <img src="{{ notice.proof_of_payment.url }}" alt="Proof of payment" style="
+                            width: 100%;
+                            border-radius: 8px;
+                            border: 1px solid var(--border);
+                            cursor: pointer;
+                        " onclick="window.open(this.src, '_blank')">
+
+                <div style="
+                            font-size: 12px;
+                            color: var(--text-secondary);
+                            margin-top: 8px;
+                        ">
+                    <i class="fa fa-expand me-1"></i>
+                    Click image to open full size
+                </div>
+
+                {% endif %}
+
+
+                {% else %}
+
+                <div class="rw-empty">
+
+                    <div class="rw-empty-icon">
+                        <i class="fa fa-image-slash"></i>
+                    </div>
+
+                    <div class="rw-empty-title">
+                        No file attached
+                    </div>
+
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- Approve Form -->
+
+        <div class="rw-card mb-3" style="border: 2px solid var(--success);">
+
+            <div class="rw-card-body">
+
+                <h3 style="
+                    color: var(--success);
+                    font-size: 16px;
+                    font-weight: 700;
+                    margin-bottom: 12px;
+                ">
+                    <i class="fa fa-circle-check me-2"></i>
+                    Approve Payment
+                </h3>
+
+
+                <p style="
+                    font-size: 13px;
+                    color: var(--text-secondary);
+                    margin-bottom: 16px;
+                ">
+                    This will create a verified payment of
+                    KSh {{ notice.amount|floatformat:0 }}
+                    and allocate it against the rent charge for
+                    {{ notice.period_start|date:"F Y" }}.
+                </p>
+
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    <button type="submit" name="action" value="approve" class="rw-btn rw-btn-success"
+                        onclick="return confirm('Approve this payment? This will mark the rent as paid.')">
+                        <i class="fa fa-circle-check me-1"></i>
+                        Approve & Mark Paid
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+
+        <!-- Reject Form -->
+
+        <div class="rw-card" style="border: 2px solid var(--danger);">
+
+            <div class="rw-card-body">
+
+                <h3 style="
+                    color: var(--danger);
+                    font-size: 16px;
+                    font-weight: 700;
+                    margin-bottom: 12px;
+                ">
+                    <i class="fa fa-circle-xmark me-2"></i>
+                    Reject Proof
+                </h3>
+
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+
+                        <label class="rw-label">
+                            Reason for Rejection
+                            <span style="color: var(--danger);">*</span>
+                        </label>
+
+                        <textarea name="rejection_notes" class="rw-input" rows="3" required
+                            placeholder="e.g. Wrong amount, blurry image, wrong reference number..."></textarea>
+
+                    </div>
+
+
+                    <button type="submit" name="action" value="reject" class="rw-btn rw-btn-danger">
+                        <i class="fa fa-circle-xmark me-1"></i>
+                        Reject — Ask to Resubmit
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <div class="col-12 col-md-5">
+
+
+        <div class="rw-card">
+
+            <div class="rw-card-header">
+                <h2 class="rw-card-title">Notice Details</h2>
+            </div>
+
+
+            <div class="rw-card-body">
+
+
+                <div class="mb-3">
+
+                    <div style="
+                        font-size: 12px;
+                        color: var(--text-secondary);
+                    ">
+                        Tenant
+                    </div>
+
+                    <div style="font-weight: 600;">
+                        {{ notice.tenancy.tenant.full_name }}
+                    </div>
+
+                </div>
+
+
+                <div class="mb-3">
+
+                    <div style="
+                        font-size: 12px;
+                        color: var(--text-secondary);
+                    ">
+                        Unit
+                    </div>
+
+                    <div style="font-weight: 600;">
+                        {{ notice.tenancy.unit.prop.name }}
+                        ·
+                        {{ notice.tenancy.unit.unit_number }}
+                    </div>
+
+                </div>
+
+
+                <div class="mb-3">
+
+                    <div style="
+                        font-size: 12px;
+                        color: var(--text-secondary);
+                    ">
+                        Period
+                    </div>
+
+                    <div style="font-weight: 600;">
+                        {{ notice.period_start }}
+                        →
+                        {{ notice.period_end }}
+                    </div>
+
+                </div>
+
+
+                <div class="mb-3">
+
+                    <div style="
+                        font-size: 12px;
+                        color: var(--text-secondary);
+                    ">
+                        Amount Due
+                    </div>
+
+                    <div style="
+                        font-size: 22px;
+                        font-weight: 700;
+                        color: var(--brand-primary);
+                    ">
+                        KSh {{ notice.amount|floatformat:0 }}
+                    </div>
+
+                </div>
+
+
+                <div class="mb-3">
+
+                    <div style="
+                        font-size: 12px;
+                        color: var(--text-secondary);
+                    ">
+                        Due Date
+                    </div>
+
+
+                    <div style="
+                        font-weight: 600;
+                        {% if notice.is_overdue %}
+                            color: var(--danger);
+                        {% endif %}
+                    ">
+
+                        {{ notice.due_date }}
+
+                        {% if notice.is_overdue %}
+
+                        <span class="rw-badge rw-badge-danger ms-1">
+                            Overdue
+                        </span>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <div>
+
+                    <div style="
+                        font-size: 12px;
+                        color: var(--text-secondary);
+                    ">
+                        Proof Uploaded
+                    </div>
+
+                    <div style="font-weight: 600;">
+
+                        {{ notice.proof_uploaded_at|date:"d M Y, g:i A" }}
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+    </div>
+    ```
+
+</div>
+
+{% endblock %}

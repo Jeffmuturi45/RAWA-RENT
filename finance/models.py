@@ -8,6 +8,8 @@ from django.utils import timezone
 # CHARGE
 # ──────────────────────────────────────────────────────────────
 
+# finance/models.py
+
 class Charge(models.Model):
     """
     An obligation owed by a tenancy (the debit side of the ledger).
@@ -27,6 +29,11 @@ class Charge(models.Model):
         PARTIAL = 'PARTIAL', 'Partially Paid'
         PAID = 'PAID',    'Paid'
         OVERDUE = 'OVERDUE', 'Overdue'
+
+    class ProofStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending Verification'
+        VERIFIED = 'VERIFIED', 'Verified'
+        REJECTED = 'REJECTED', 'Rejected'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(
@@ -54,6 +61,32 @@ class Charge(models.Model):
         'accounts.User', on_delete=models.PROTECT,
         related_name='charges_created', null=True, blank=True)
 
+    # ─────────────────────────────────────────
+    # PROOF OF PAYMENT FIELDS
+    # ─────────────────────────────────────────
+    proof_of_payment = models.FileField(
+        upload_to='proofs/charges/%Y/%m/%d/',
+        null=True,
+        blank=True,
+        help_text='Upload proof of payment (screenshot, PDF, etc.)'
+    )
+    proof_uploaded_at = models.DateTimeField(null=True, blank=True)
+    proof_verified = models.BooleanField(default=False)
+    proof_verified_at = models.DateTimeField(null=True, blank=True)
+    proof_verified_by = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='verified_proofs'
+    )
+    proof_rejection_reason = models.TextField(blank=True)
+    proof_status = models.CharField(
+        max_length=20,
+        choices=ProofStatus.choices,
+        default=ProofStatus.PENDING
+    )
+
     class Meta:
         verbose_name = 'Charge'
         verbose_name_plural = 'Charges'
@@ -71,6 +104,7 @@ class Charge(models.Model):
         ]
         indexes = [
             models.Index(fields=['tenancy', 'due_date']),
+            models.Index(fields=['tenancy', 'proof_status']),
         ]
 
     def __str__(self):
@@ -103,6 +137,33 @@ class Charge(models.Model):
             self.Status.UNPAID:  'rw-badge-warning',
             self.Status.OVERDUE: 'rw-badge-danger',
         }.get(self.status, 'rw-badge-dark')
+
+    def get_proof_status_badge(self):
+        """Get badge class for proof status."""
+        return {
+            self.ProofStatus.PENDING: 'rw-badge-warning',
+            self.ProofStatus.VERIFIED: 'rw-badge-success',
+            self.ProofStatus.REJECTED: 'rw-badge-danger',
+        }.get(self.proof_status, 'rw-badge-secondary')
+
+    def get_proof_status_display(self):
+        """Get human-readable proof status."""
+        return dict(self.ProofStatus.choices).get(self.proof_status, self.proof_status)
+
+    def can_upload_proof(self):
+        """Check if tenant can upload proof for this charge."""
+        return (
+            self.balance > 0 and
+            self.proof_status != self.ProofStatus.VERIFIED
+        )
+
+    def has_pending_proof(self):
+        """Check if proof is pending verification."""
+        return self.proof_status == self.ProofStatus.PENDING
+
+    def has_rejected_proof(self):
+        """Check if proof was rejected."""
+        return self.proof_status == self.ProofStatus.REJECTED
 
 
 # ──────────────────────────────────────────────────────────────

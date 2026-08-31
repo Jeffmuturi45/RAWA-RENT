@@ -203,10 +203,26 @@ def set_financial_pin(request):
 
 @login_required
 def portal_placeholder(request):
-    """Landing page for TENANT-role users (staff app blocked; portal deferred)."""
-    return render(request, 'portal/dashboard.html', {
-        'page_title': 'Tenant Portal',
-    })
+    """
+    Redirect tenant users to the actual portal or dashboard.
+    """
+    # Check if user has a tenant profile
+    if hasattr(request.user, 'tenant_profile'):
+        tenant = request.user.tenant_profile
+        tenancy = tenant.get_active_tenancy()
+
+        # If tenant has an active tenancy, redirect to portal dashboard
+        if tenancy:
+            return redirect('portal:dashboard')
+        else:
+            # No active tenancy, redirect to main dashboard with message
+            messages.info(request, 'You do not have an active tenancy.')
+            # Use the correct URL name - check what your dashboard URL is named
+            # or 'dashboard' or 'core_dashboard'
+            return redirect('core:dashboard')
+    else:
+        # User is not a tenant, redirect to main dashboard
+        return redirect('core:dashboard')  # or 'dashboard' or 'core_dashboard'
 
 
 @login_required

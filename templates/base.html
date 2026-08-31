@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -25,9 +26,28 @@
   {% if theme_vars %}
   <style>
     :root {
-      {% for var, value in theme_vars.items %}
-      {{ var }}: {{ value }};
-      {% endfor %}
+        {
+        % for var,
+        value in theme_vars.items %
+      }
+
+        {
+          {
+          var
+        }
+      }
+
+      : {
+          {
+          value
+        }
+      }
+
+      ;
+
+        {
+        % endfor %
+      }
     }
   </style>
   {% endif %}
@@ -39,10 +59,10 @@
     (function () {
       try {
         if (window.innerWidth > 768 &&
-            localStorage.getItem('rw-sidebar-collapsed') === '1') {
+          localStorage.getItem('rw-sidebar-collapsed') === '1') {
           document.documentElement.classList.add('sidebar-collapsed');
         }
-      } catch (e) {}
+      } catch (e) { }
     })();
   </script>
 </head>
@@ -66,13 +86,13 @@
       <!-- Brand -->
       <div class="rw-sidebar-brand">
         {% if request.user.organization and request.user.organization.logo %}
-          <img src="{{ request.user.organization.logo.url }}" alt="Logo" />
+        <img src="{{ request.user.organization.logo.url }}" alt="Logo" />
         {% else %}
-          <div style="width:40px;height:40px;background:var(--brand-primary);border-radius:6px;
+        <div style="width:40px;height:40px;background:var(--brand-primary);border-radius:6px;
                       display:flex;align-items:center;justify-content:center;
                       color:var(--brand-secondary);font-weight:800;font-size:16px;">
-            R
-          </div>
+          R
+        </div>
         {% endif %}
         <div class="rw-sidebar-brand-text">
           <span class="rw-sidebar-brand-name">{{ agency_name }}</span>
@@ -85,8 +105,7 @@
 
         <div class="rw-nav-section">Main</div>
 
-        <a href="{% url 'core:dashboard' %}"
-           class="rw-nav-item {% block nav_dashboard %}{% endblock %}">
+        <a href="{% url 'core:dashboard' %}" class="rw-nav-item {% block nav_dashboard %}{% endblock %}">
           <i class="fa fa-gauge-high"></i> <span class="rw-nav-label">Dashboard</span>
         </a>
 
@@ -127,6 +146,26 @@
 
         <a href="{% url 'finance:arrears' %}" class="rw-nav-item {% block nav_arrears %}{% endblock %}">
           <i class="fa fa-triangle-exclamation"></i> <span class="rw-nav-label">Arrears</span>
+        </a>
+
+        <a href="{% url 'finance:rent_notice_list' %}" class="rw-nav-item {% block nav_notices %}{% endblock %}">
+          <i class="fa fa-file-invoice-dollar"></i> <span class="rw-nav-label">Rent Notices</span>
+        </a>
+
+        <a href="{% url 'finance:maintenance_list' %}" class="rw-nav-item {% block nav_maintenance %}{% endblock %}">
+          <i class="fa fa-wrench"></i> <span class="rw-nav-label">Maintenance</span>
+        </a>
+
+        <a href="{% url 'finance:moveout_request_list' %}" class="rw-nav-item {% block nav_moveouts %}{% endblock %}">
+          <i class="fa fa-door-open"></i> <span class="rw-nav-label">Move-Outs</span>
+        </a>
+
+        <a href="{% url 'finance:transfer_request_list' %}" class="rw-nav-item {% block nav_transfers %}{% endblock %}">
+          <i class="fa fa-right-left"></i> <span class="rw-nav-label">Transfers</span>
+        </a>
+
+        <a href="{% url 'finance:vacancy_list' %}" class="rw-nav-item {% block nav_vacancy %}{% endblock %}">
+          <i class="fa fa-door-closed"></i> <span class="rw-nav-label">Vacancies</span>
         </a>
         {% endif %}
 
@@ -170,8 +209,7 @@
           </div>
           <form method="post" action="{% url 'accounts:logout' %}" style="display:inline;margin-left:4px;">
             {% csrf_token %}
-            <button type="submit" title="Logout"
-                    style="background:none;border:none;padding:0;cursor:pointer;
+            <button type="submit" title="Logout" style="background:none;border:none;padding:0;cursor:pointer;
                            color:rgba(255,255,255,0.4);font-size:14px;">
               <i class="fa fa-right-from-bracket"></i>
             </button>
@@ -219,7 +257,7 @@
               </div>
               {% for n in recent_notifications %}
               <a href="{% if n.url %}{{ n.url }}{% else %}{% url 'notifications:list' %}{% endif %}"
-                 class="rw-dropdown-item" style="{% if not n.is_read %}background:var(--brand-light);{% endif %}">
+                class="rw-dropdown-item" style="{% if not n.is_read %}background:var(--brand-light);{% endif %}">
                 <i class="fa {{ n.get_icon }}" style="color:var(--{{ n.level }});"></i>
                 <span style="flex:1;font-size:12.5px;line-height:1.4;">{{ n.message|truncatechars:80 }}</span>
               </a>
@@ -236,9 +274,10 @@
           <div class="rw-dropdown" x-data="{ open: false }" @click.outside="open = false">
             <button class="rw-topbar-icon-btn" title="Profile" @click="open = !open">
               {% if request.user.avatar %}
-                <img src="{{ request.user.avatar.url }}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />
+              <img src="{{ request.user.avatar.url }}" alt=""
+                style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />
               {% else %}
-                <i class="fa fa-user"></i>
+              <i class="fa fa-user"></i>
               {% endif %}
             </button>
             <div class="rw-dropdown-menu" x-show="open" x-cloak x-transition>
@@ -305,7 +344,7 @@
             'rw-sidebar-collapsed',
             rootEl.classList.contains('sidebar-collapsed') ? '1' : '0'
           );
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 
@@ -346,4 +385,5 @@
   {% block extra_js %}{% endblock %}
 
 </body>
+
 </html>

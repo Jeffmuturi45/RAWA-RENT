@@ -1,0 +1,986 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Request Transfer{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+    <div>
+        <h1 class="rw-page-title">Request Unit Transfer</h1>
+        <p class="rw-page-subtitle">
+            Request to move to another available unit in your current property.
+        </p>
+    </div>
+</div>
+
+
+{% if existing %}
+
+<!-- =====================================================
+     EXISTING TRANSFER REQUEST
+===================================================== -->
+
+<div class="rw-card mb-4">
+
+    <div class="rw-card-header transfer-card-header">
+
+        <h2 class="rw-card-title">
+            <i class="fa fa-right-left me-2"></i>
+            Transfer Request
+        </h2>
+
+        <span class="rw-badge {{ existing.get_status_badge }}">
+            {{ existing.get_status_display }}
+        </span>
+
+    </div>
+
+
+    <div class="rw-card-body">
+
+        <div class="row g-3">
+
+            <!-- CURRENT UNIT -->
+            <div class="col-6 col-md-3">
+
+                <div class="transfer-label">
+                    Current Unit
+                </div>
+
+                <div class="transfer-value">
+                    {{ existing.tenancy.unit.unit_number }}
+                </div>
+
+            </div>
+
+
+            <!-- REQUESTED UNIT -->
+            <div class="col-6 col-md-3">
+
+                <div class="transfer-label">
+                    Requested Unit
+                </div>
+
+                <div class="transfer-value">
+                    {{ existing.requested_unit.unit_number }}
+                </div>
+
+            </div>
+
+
+            <!-- EFFECTIVE DATE -->
+            <div class="col-6 col-md-3">
+
+                <div class="transfer-label">
+                    Effective Date
+                </div>
+
+                <div class="transfer-value">
+                    {{ existing.effective_date|date:"d M Y" }}
+                </div>
+
+            </div>
+
+
+            <!-- DEPOSIT DIFFERENCE -->
+            <div class="col-6 col-md-3">
+
+                <div class="transfer-label">
+                    Deposit Adjustment
+                </div>
+
+
+                {% if deposit_difference_type == 'PAY' %}
+
+                    <div class="transfer-value transfer-danger">
+                        + KSh {{ deposit_difference_amount|floatformat:0 }}
+                    </div>
+
+                    <div class="transfer-help">
+                        Additional deposit required
+                    </div>
+
+
+                {% elif deposit_difference_type == 'REFUND' %}
+
+                    <div class="transfer-value transfer-success">
+                        KSh {{ deposit_difference_amount|floatformat:0 }}
+                    </div>
+
+                    <div class="transfer-help">
+                        Deposit credit will be applied
+                    </div>
+
+
+                {% else %}
+
+                    <div class="transfer-value">
+                        KSh 0
+                    </div>
+
+                    <div class="transfer-help">
+                        No deposit adjustment required
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        {% if existing.reason %}
+
+        <div class="transfer-reason">
+
+            <div class="transfer-label">
+                Reason for Transfer
+            </div>
+
+            <p>
+                {{ existing.reason }}
+            </p>
+
+        </div>
+
+        {% endif %}
+
+
+        {% if existing.status == 'REJECTED' %}
+
+        <div class="rw-alert rw-alert-danger mt-4">
+
+            <i class="fa fa-circle-xmark me-2"></i>
+
+            {% if existing.rejection_note %}
+                {{ existing.rejection_note }}
+            {% else %}
+                Your transfer request was not approved.
+            {% endif %}
+
+        </div>
+
+        {% endif %}
+
+
+        {% if existing.status == 'APPROVED' %}
+
+        <div class="rw-alert rw-alert-success mt-4">
+
+            <i class="fa fa-circle-check me-2"></i>
+
+            Your transfer request has been approved.
+            The agency will complete the transfer process.
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+{% elif tenancy and vacant_units %}
+
+<!-- =====================================================
+     AVAILABLE UNITS
+===================================================== -->
+
+<div class="rw-card mb-4">
+
+    <div class="rw-card-header">
+
+        <div>
+
+            <h2 class="rw-card-title">
+                <i class="fa fa-building me-2"></i>
+                Select Your Preferred Unit
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="rw-card-body">
+
+        <div class="rw-alert rw-alert-info mb-4">
+
+            <i class="fa fa-circle-info me-2"></i>
+
+            Select one available unit below. The agency must review
+            and approve your request before any transfer takes place.
+
+        </div>
+
+
+        <form
+            method="post"
+            action="{% url 'portal:transfer_create' %}"
+            id="transferForm"
+        >
+
+            {% csrf_token %}
+
+
+            <!-- AVAILABLE UNITS -->
+
+            <div class="row g-3 mb-4">
+
+                {% for unit in vacant_units %}
+
+                <div class="col-12 col-md-6">
+
+                    <label
+                        class="unit-selector"
+                        for="unit_{{ unit.pk }}"
+                    >
+
+                        <!-- REAL RADIO BUTTON -->
+
+                        <input
+                            type="radio"
+                            id="unit_{{ unit.pk }}"
+                            name="requested_unit"
+                            value="{{ unit.pk }}"
+                            required
+                            class="unit-radio"
+                        >
+
+
+                        <!-- UNIT CARD -->
+
+                        <div class="unit-card">
+
+                            <div class="unit-card-header">
+
+                                <div>
+
+                                    <div class="unit-title">
+
+                                        Unit {{ unit.unit_number }}
+
+                                    </div>
+
+
+                                    <div class="unit-type">
+
+                                        {{ unit.house_type.name|default:"Standard Unit" }}
+
+                                    </div>
+
+
+                                    {% if unit.floor %}
+
+                                    <div class="unit-floor">
+
+                                        <i class="fa fa-layer-group me-1"></i>
+                                        Floor {{ unit.floor }}
+
+                                    </div>
+
+                                    {% endif %}
+
+                                </div>
+
+
+                                <!-- SELECT INDICATOR -->
+
+                                <div class="unit-select-indicator">
+
+                                    <i class="fa fa-check"></i>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- RENT -->
+
+                            <div class="unit-price-row">
+
+                                <div>
+
+                                    <div class="unit-price-label">
+                                        Monthly Rent
+                                    </div>
+
+                                    <div class="unit-rent">
+
+                                        KSh {{ unit.rent_amount|floatformat:0 }}
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="unit-deposit">
+
+                                    <div class="unit-price-label">
+                                        Deposit
+                                    </div>
+
+                                    <div class="unit-deposit-value">
+
+                                        KSh {{ unit.deposit_amount|floatformat:0 }}
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- COMPARISON -->
+
+                            <div class="unit-deposit-comparison">
+
+                                <i class="fa fa-wallet me-1"></i>
+
+                                Current unit deposit:
+                                <strong>
+                                    KSh {{ tenancy.unit.deposit_amount|floatformat:0 }}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                    </label>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- REASON -->
+
+            <div class="mb-4">
+
+                <label
+                    for="reason"
+                    class="rw-label"
+                >
+
+                    Reason for Transfer
+                    <span class="transfer-optional">
+                        (optional)
+                    </span>
+
+                </label>
+
+
+                <textarea
+                    id="reason"
+                    name="reason"
+                    class="rw-input"
+                    rows="4"
+                    maxlength="1000"
+                    placeholder="Tell the agency why you would like to transfer..."
+                ></textarea>
+
+
+                <div class="transfer-help mt-1">
+
+                    Maximum 1000 characters.
+
+                </div>
+
+            </div>
+
+
+            <!-- SUBMIT -->
+
+            <button
+                type="submit"
+                id="submitTransfer"
+                class="rw-btn rw-btn-primary transfer-submit"
+                disabled
+            >
+
+                <i class="fa fa-right-left me-1"></i>
+
+                Submit Transfer Request
+
+            </button>
+
+
+            <div
+                id="selectionWarning"
+                class="transfer-selection-warning"
+            >
+
+                <i class="fa fa-circle-info me-1"></i>
+
+                Please select a unit before submitting your request.
+
+            </div>
+
+
+        </form>
+
+    </div>
+
+</div>
+
+
+{% elif tenancy %}
+
+<!-- =====================================================
+     NO VACANT UNITS
+===================================================== -->
+
+<div class="rw-card">
+
+    <div class="rw-empty">
+
+        <div class="rw-empty-icon">
+            <i class="fa fa-door-open"></i>
+        </div>
+
+
+        <div class="rw-empty-title">
+            No Vacant Units Available
+        </div>
+
+
+        <div class="rw-empty-text">
+
+            There are currently no other vacant units
+            in your property.
+
+            Please check again later or contact the agency.
+
+        </div>
+
+    </div>
+
+</div>
+
+
+{% else %}
+
+<!-- =====================================================
+     NO ACTIVE TENANCY
+===================================================== -->
+
+<div class="rw-card">
+
+    <div class="rw-empty">
+
+        <div class="rw-empty-icon">
+
+            <i class="fa fa-house-crack"></i>
+
+        </div>
+
+
+        <div class="rw-empty-title">
+
+            No Active Tenancy
+
+        </div>
+
+
+        <div class="rw-empty-text">
+
+            You need an active tenancy before
+            you can request a unit transfer.
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+<!-- =====================================================
+     PAGE CSS
+===================================================== -->
+
+<style>
+
+    /* -------------------------------------------------
+       EXISTING REQUEST
+    ------------------------------------------------- */
+
+    .transfer-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+    }
+
+
+    .transfer-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 5px;
+    }
+
+
+    .transfer-value {
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+
+    .transfer-help {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 3px;
+    }
+
+
+    .transfer-danger {
+        color: var(--danger);
+    }
+
+
+    .transfer-success {
+        color: var(--success);
+    }
+
+
+    .transfer-reason {
+        margin-top: 25px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+
+
+    .transfer-reason p {
+        margin: 6px 0 0;
+        line-height: 1.6;
+    }
+
+
+    /* -------------------------------------------------
+       UNIT SELECTOR
+    ------------------------------------------------- */
+
+    .unit-selector {
+        display: block;
+        cursor: pointer;
+        height: 100%;
+    }
+
+
+    /* Keep radio accessible but visually hidden */
+
+    .unit-radio {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+
+    .unit-card {
+
+        height: 100%;
+
+        padding: 18px;
+
+        border: 2px solid var(--border);
+
+        border-radius: 10px;
+
+        background: var(--card-bg, #fff);
+
+        transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            transform 0.2s ease;
+
+    }
+
+
+    .unit-card:hover {
+
+        border-color: var(--brand-primary);
+
+        transform: translateY(-2px);
+
+    }
+
+
+    /* Selected Unit */
+
+    .unit-radio:checked + .unit-card {
+
+        border-color: var(--brand-primary);
+
+        background: var(--brand-light);
+
+        box-shadow:
+            0 0 0 3px rgba(0, 0, 0, 0.04);
+
+    }
+
+
+    /* Keyboard accessibility */
+
+    .unit-radio:focus + .unit-card {
+
+        outline: 3px solid rgba(0, 0, 0, 0.12);
+
+        outline-offset: 2px;
+
+    }
+
+
+    /* -------------------------------------------------
+       UNIT HEADER
+    ------------------------------------------------- */
+
+    .unit-card-header {
+
+        display: flex;
+
+        justify-content: space-between;
+
+        align-items: flex-start;
+
+        gap: 15px;
+
+    }
+
+
+    .unit-title {
+
+        font-size: 18px;
+
+        font-weight: 700;
+
+        color: var(--text-primary);
+
+    }
+
+
+    .unit-type {
+
+        font-size: 13px;
+
+        color: var(--text-secondary);
+
+        margin-top: 3px;
+
+    }
+
+
+    .unit-floor {
+
+        font-size: 12px;
+
+        color: var(--text-secondary);
+
+        margin-top: 6px;
+
+    }
+
+
+    /* -------------------------------------------------
+       SELECT INDICATOR
+    ------------------------------------------------- */
+
+    .unit-select-indicator {
+
+        width: 28px;
+
+        height: 28px;
+
+        border-radius: 50%;
+
+        border: 2px solid var(--border);
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        font-size: 12px;
+
+        opacity: 0;
+
+        transition:
+            opacity 0.2s ease,
+            transform 0.2s ease;
+
+    }
+
+
+    .unit-radio:checked + .unit-card
+    .unit-select-indicator {
+
+        opacity: 1;
+
+        color: white;
+
+        background: var(--brand-primary);
+
+        border-color: var(--brand-primary);
+
+        transform: scale(1.05);
+
+    }
+
+
+    /* -------------------------------------------------
+       PRICES
+    ------------------------------------------------- */
+
+    .unit-price-row {
+
+        display: flex;
+
+        justify-content: space-between;
+
+        gap: 15px;
+
+        margin-top: 20px;
+
+        padding-top: 15px;
+
+        border-top: 1px solid var(--border);
+
+    }
+
+
+    .unit-price-label {
+
+        font-size: 11px;
+
+        color: var(--text-secondary);
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.3px;
+
+    }
+
+
+    .unit-rent {
+
+        font-size: 19px;
+
+        font-weight: 700;
+
+        color: var(--brand-primary);
+
+        margin-top: 3px;
+
+    }
+
+
+    .unit-deposit {
+
+        text-align: right;
+
+    }
+
+
+    .unit-deposit-value {
+
+        font-size: 14px;
+
+        font-weight: 600;
+
+        margin-top: 4px;
+
+    }
+
+
+    /* -------------------------------------------------
+       DEPOSIT COMPARISON
+    ------------------------------------------------- */
+
+    .unit-deposit-comparison {
+
+        margin-top: 15px;
+
+        padding: 9px 12px;
+
+        border-radius: 7px;
+
+        font-size: 12px;
+
+        color: var(--text-secondary);
+
+        background: var(--brand-light);
+
+    }
+
+
+    /* -------------------------------------------------
+       FORM
+    ------------------------------------------------- */
+
+    .transfer-optional {
+
+        font-size: 12px;
+
+        font-weight: normal;
+
+        color: var(--text-secondary);
+
+    }
+
+
+    .transfer-submit {
+
+        min-width: 230px;
+
+    }
+
+
+    .transfer-submit:disabled {
+
+        opacity: 0.55;
+
+        cursor: not-allowed;
+
+    }
+
+
+    .transfer-selection-warning {
+
+        display: block;
+
+        margin-top: 10px;
+
+        font-size: 12px;
+
+        color: var(--text-secondary);
+
+    }
+
+
+    /* -------------------------------------------------
+       RESPONSIVE
+    ------------------------------------------------- */
+
+    @media (max-width: 576px) {
+
+        .unit-card {
+            padding: 15px;
+        }
+
+
+        .unit-price-row {
+            flex-direction: column;
+        }
+
+
+        .unit-deposit {
+            text-align: left;
+        }
+
+
+        .transfer-submit {
+            width: 100%;
+        }
+
+
+        .transfer-card-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+    }
+
+</style>
+
+
+<!-- =====================================================
+     UNIT SELECTION JAVASCRIPT
+===================================================== -->
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const radios = document.querySelectorAll('.unit-radio');
+
+    const submitButton =
+        document.getElementById('submitTransfer');
+
+    const selectionWarning =
+        document.getElementById('selectionWarning');
+
+
+    radios.forEach(function (radio) {
+
+        radio.addEventListener('change', function () {
+
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+
+
+            if (selectionWarning) {
+                selectionWarning.style.display = 'none';
+            }
+
+        });
+
+    });
+
+
+    const form =
+        document.getElementById('transferForm');
+
+
+    if (form) {
+
+        form.addEventListener('submit', function (event) {
+
+            const selected =
+                document.querySelector(
+                    '.unit-radio:checked'
+                );
+
+
+            if (!selected) {
+
+                event.preventDefault();
+
+
+                if (selectionWarning) {
+
+                    selectionWarning.style.display =
+                        'block';
+
+                }
+
+
+                alert(
+                    'Please select an available unit before submitting.'
+                );
+
+                return false;
+
+            }
+
+
+            return confirm(
+                'Submit this transfer request? ' +
+                'The agency must approve the request before ' +
+                'any transfer takes place.'
+            );
+
+        });
+
+    }
+
+});
+
+</script>
+
+
+{% endblock %}

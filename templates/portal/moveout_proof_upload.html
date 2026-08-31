@@ -1,0 +1,295 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Upload Move-Out Payment Proofs{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+    <div>
+        <h1 class="rw-page-title">
+            <i class="fa fa-upload me-2"></i>
+            Upload Move-Out Payment Proofs
+        </h1>
+        <p class="rw-page-subtitle">
+            Upload proof of payment for all outstanding charges to complete your move-out.
+        </p>
+    </div>
+</div>
+
+<div class="rw-card mb-4">
+    <div class="rw-card-body">
+        
+        <div class="rw-alert rw-alert-info mb-4">
+            <i class="fa fa-info-circle me-2"></i>
+            <strong>Required:</strong>
+            You have outstanding charges of <strong>KSh {{ total_outstanding|floatformat:0 }}</strong>
+            that must be cleared before your move-out can be completed.
+            <br>
+            <span class="text-muted">
+                Upload proof of payment for each charge below. The agency will verify your proofs.
+            </span>
+        </div>
+
+        {% if all_uploaded %}
+        <div class="rw-alert rw-alert-success mb-4">
+            <i class="fa fa-check-circle me-2"></i>
+            <strong>All proofs uploaded!</strong>
+            You have uploaded proofs for all outstanding charges. 
+            The agency will verify them and complete your move-out.
+        </div>
+        {% endif %}
+
+        {% if has_pending_proofs %}
+        <div class="rw-alert rw-alert-warning mb-4">
+            <i class="fa fa-clock me-2"></i>
+            <strong>Pending Verification:</strong>
+            Some of your proofs are awaiting verification. 
+            The agency will review them shortly.
+        </div>
+        {% endif %}
+
+        <div class="table-responsive">
+            <table class="rw-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Proof Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in charges %}
+                    <tr>
+                        <td>
+                            <span class="rw-badge rw-badge-secondary">
+                                {{ item.charge.get_charge_type_display }}
+                            </span>
+                        </td>
+                        <td>{{ item.charge.description|default:"—"|truncatechars:50 }}</td>
+                        <td class="rw-table-amount credit">
+                            KSh {{ item.balance|floatformat:0 }}
+                        </td>
+                        <td>
+                            {% if item.charge.proof_status == 'VERIFIED' %}
+                                <span class="rw-badge rw-badge-success">
+                                    <i class="fa fa-check-circle me-1"></i>
+                                    Verified
+                                </span>
+                            {% elif item.charge.proof_status == 'PENDING' %}
+                                <span class="rw-badge rw-badge-warning">
+                                    <i class="fa fa-clock me-1"></i>
+                                    Pending
+                                </span>
+                            {% elif item.charge.proof_status == 'REJECTED' %}
+                                <span class="rw-badge rw-badge-danger">
+                                    <i class="fa fa-times-circle me-1"></i>
+                                    Rejected
+                                </span>
+                            {% else %}
+                                <span class="rw-badge rw-badge-secondary">
+                                    No Proof
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.can_upload %}
+                                <button class="rw-btn rw-btn-sm rw-btn-primary upload-btn"
+                                        data-charge-id="{{ item.charge.pk }}"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#uploadModal">
+                                    <i class="fa fa-upload me-1"></i>
+                                    Upload Proof
+                                </button>
+                            {% elif item.charge.proof_status == 'REJECTED' %}
+                                <button class="rw-btn rw-btn-sm rw-btn-outline-danger upload-btn"
+                                        data-charge-id="{{ item.charge.pk }}"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#uploadModal">
+                                    <i class="fa fa-redo me-1"></i>
+                                    Re-upload
+                                </button>
+                                {% if item.charge.proof_rejection_reason %}
+                                <br>
+                                <small class="text-danger" style="font-size: 11px;">
+                                    {{ item.charge.proof_rejection_reason|truncatechars:50 }}
+                                </small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted" style="font-size: 13px;">
+                                    <i class="fa fa-check-circle me-1" style="color: var(--success);"></i>
+                                    All clear
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4">
+            <a href="{% url 'portal:moveout' %}" class="rw-btn rw-btn-secondary">
+                <i class="fa fa-arrow-left me-1"></i>
+                Back to Move-Out
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ───────────────────────────────────────── -->
+<!-- UPLOAD MODAL                              -->
+<!-- ───────────────────────────────────────── -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-upload me-2"></i>
+                    Upload Proof of Payment
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="uploadForm" method="post" enctype="multipart/form-data" action="{% url 'portal:moveout_proof_upload' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="charge_id" id="modalChargeId">
+                    
+                    <div class="rw-alert rw-alert-info mb-3">
+                        <i class="fa fa-info-circle me-2"></i>
+                        <strong>Accepted File Types:</strong>
+                        JPG, PNG, PDF, HEIC
+                        <br>
+                        <span class="text-muted">Maximum file size: 10MB</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="rw-label">
+                            Select Proof File
+                            <span style="color: var(--danger);">*</span>
+                        </label>
+                        <input type="file" 
+                               name="proof_of_payment" 
+                               class="rw-input" 
+                               id="proofFile"
+                               accept=".jpg,.jpeg,.png,.pdf,.heic,.heif"
+                               required>
+                        <div class="rw-helper">
+                            <small class="text-muted">
+                                Upload a clear screenshot or photo of your payment confirmation.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Progress -->
+                    <div class="mt-3" id="uploadProgressContainer" style="display: none;">
+                        <div style="font-size: 13px; margin-bottom: 4px;">
+                            <span id="uploadStatus">Uploading...</span>
+                            <span id="uploadPercent" style="float: right;">0%</span>
+                        </div>
+                        <div style="background: var(--border); border-radius: 8px; height: 8px; overflow: hidden;">
+                            <div id="uploadProgress" style="
+                                width: 0%;
+                                height: 100%;
+                                background: linear-gradient(90deg, var(--brand-primary), var(--success));
+                                border-radius: 8px;
+                                transition: width 0.3s ease;
+                            "></div>
+                        </div>
+                        <div class="mt-2">
+                            <small id="uploadFileInfo" class="text-muted"></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="rw-btn rw-btn-secondary" data-bs-dismiss="modal">
+                        <i class="fa fa-times me-1"></i>
+                        Cancel
+                    </button>
+                    <button type="submit" class="rw-btn rw-btn-primary" id="uploadSubmitBtn">
+                        <i class="fa fa-cloud-upload me-1"></i>
+                        Upload Proof
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal handling
+        const uploadModal = document.getElementById('uploadModal');
+        const modalChargeId = document.getElementById('modalChargeId');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadProgressContainer = document.getElementById('uploadProgressContainer');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const uploadPercent = document.getElementById('uploadPercent');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const uploadFileInfo = document.getElementById('uploadFileInfo');
+        const uploadSubmitBtn = document.getElementById('uploadSubmitBtn');
+        const proofFile = document.getElementById('proofFile');
+
+        // Handle upload button clicks
+        document.querySelectorAll('.upload-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const chargeId = this.getAttribute('data-charge-id');
+                modalChargeId.value = chargeId;
+                // Reset form
+                uploadForm.reset();
+                uploadProgressContainer.style.display = 'none';
+                uploadSubmitBtn.disabled = false;
+                uploadSubmitBtn.innerHTML = '<i class="fa fa-cloud-upload me-1"></i> Upload Proof';
+            });
+        });
+
+        // File input handling
+        proofFile.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const maxSize = 10 * 1024 * 1024;
+                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                
+                if (file.size > maxSize) {
+                    alert('File size exceeds 10MB limit.');
+                    this.value = '';
+                    return;
+                }
+                
+                uploadFileInfo.textContent = `Selected: ${file.name} (${fileSizeMB} MB)`;
+            }
+        });
+
+        // Form submission with progress
+        uploadForm.addEventListener('submit', function(e) {
+            const file = proofFile.files[0];
+            if (!file) {
+                e.preventDefault();
+                alert('Please select a file to upload.');
+                return;
+            }
+            
+            // Show progress
+            uploadProgressContainer.style.display = 'block';
+            uploadSubmitBtn.disabled = true;
+            uploadSubmitBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Uploading...';
+            
+            let progress = 0;
+            const interval = setInterval(function() {
+                progress += Math.random() * 15 + 5;
+                if (progress >= 95) {
+                    clearInterval(interval);
+                    progress = 95;
+                    uploadStatus.textContent = 'Processing...';
+                }
+                uploadProgress.style.width = Math.min(progress, 95) + '%';
+                uploadPercent.textContent = Math.min(Math.round(progress), 95) + '%';
+            }, 300);
+        });
+    });
+</script>
+{% endblock %}

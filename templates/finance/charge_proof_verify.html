@@ -1,0 +1,462 @@
+<!-- finance/templates/finance/charge_proof_verify.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid px-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mt-3 mb-3">
+                <h1 class="h3 mb-0 text-gray-800">{{ page_title }}</h1>
+                <div>
+                    <a href="{% url 'finance:payment_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Payments
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ───────────────────────────────────────── -->
+    <!-- CHARGE DETAILS                           -->
+    <!-- ───────────────────────────────────────── -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        Charge Details
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tr>
+                                <th style="width: 30%;">Charge ID</th>
+                                <td><code>#{{ charge.id|slice:"8" }}</code></td>
+                            </tr>
+                            <tr>
+                                <th>Type</th>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ charge.get_charge_type_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Description</th>
+                                <td>{{ charge.description|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="bg-light">Total Amount</th>
+                                <td class="bg-light">
+                                    <strong>KSh {{ charge.amount|floatformat:0 }}</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="bg-warning-subtle">Current Balance</th>
+                                <td class="bg-warning-subtle">
+                                    <strong class="text-danger" style="font-size: 1.1em;">
+                                        KSh {{ charge.balance|floatformat:0 }}
+                                    </strong>
+                                    <br>
+                                    <small class="text-muted">Amount still outstanding</small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Amount Paid</th>
+                                <td>
+                                    <strong class="text-success">
+                                        KSh {{ charge.amount_allocated|floatformat:0 }}
+                                    </strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Due Date</th>
+                                <td>{{ charge.due_date|date:"d M Y" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Tenant</th>
+                                <td>
+                                    <a href="{% url 'tenants:detail' charge.tenancy.tenant.pk %}">
+                                        <strong>{{ charge.tenancy.tenant.full_name }}</strong>
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ charge.tenancy.unit.unit_number }} - 
+                                        {{ charge.tenancy.unit.prop.name }}
+                                    </small>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Proof Status</th>
+                                <td>
+                                    <span class="badge {{ charge.get_proof_status_badge }}">
+                                        {{ charge.get_proof_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Uploaded At</th>
+                                <td>{{ charge.proof_uploaded_at|date:"d M Y H:i"|default:"—" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ───────────────────────────────────────── -->
+        <!-- PROOF PREVIEW                            -->
+        <!-- ───────────────────────────────────────── -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-image me-2"></i>
+                        Proof of Payment
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    {% if charge.proof_of_payment %}
+                        {% with proof_url=charge.proof_of_payment.url %}
+                            {% if proof_url|lower|slice:"-4:" == ".pdf" %}
+                                <div class="mb-3">
+                                    <i class="fas fa-file-pdf fa-5x text-danger"></i>
+                                    <p class="mt-2">
+                                        <a href="{{ proof_url }}" target="_blank" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-eye me-1"></i> View PDF
+                                        </a>
+                                    </p>
+                                </div>
+                            {% elif proof_url|lower|slice:"-4:" in ".jpg.jpeg.png.heic.heif" %}
+                                <div class="mb-3">
+                                    <img src="{{ proof_url }}" 
+                                         alt="Proof of Payment" 
+                                         class="img-fluid rounded" 
+                                         style="max-height: 300px; cursor: pointer;"
+                                         onclick="window.open('{{ proof_url }}', '_blank')">
+                                    <p class="mt-2">
+                                        <a href="{{ proof_url }}" target="_blank" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-expand me-1"></i> View Full Size
+                                        </a>
+                                    </p>
+                                </div>
+                            {% else %}
+                                <div class="mb-3">
+                                    <i class="fas fa-file fa-5x text-secondary"></i>
+                                    <p class="mt-2">
+                                        <a href="{{ proof_url }}" target="_blank" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-download me-1"></i> Download File
+                                        </a>
+                                    </p>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        <div class="text-muted py-4">
+                            <i class="fas fa-file-image fa-4x mb-3 d-block"></i>
+                            <p>No proof of payment uploaded</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ───────────────────────────────────────── -->
+    <!-- VERIFICATION ACTIONS                     -->
+    <!-- ───────────────────────────────────────── -->
+    {% if can_verify %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 bg-warning">
+                    <h6 class="m-0 font-weight-bold text-dark">
+                        <i class="fas fa-tasks me-2"></i>
+                        Verification Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Approve Section -->
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded h-100">
+                                <h5 class="text-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    Approve Proof
+                                </h5>
+                                <p class="text-muted small">
+                                    Enter the actual amount paid by the tenant and approve this proof.
+                                    <br>
+                                    <strong class="text-danger">Outstanding Balance: KSh {{ charge.balance|floatformat:0 }}</strong>
+                                </p>
+                                <form method="post" id="approveForm">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="verify">
+                                    <div class="mb-3">
+                                        <label for="paidAmount" class="form-label fw-bold">
+                                            Amount Paid <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">KSh</span>
+                                            <input type="number" 
+                                                   name="paid_amount" 
+                                                   id="paidAmount" 
+                                                   class="form-control form-control-lg" 
+                                                   step="0.01"
+                                                   min="0.01"
+                                                   max="{{ charge.balance }}"
+                                                   placeholder="Enter amount paid by tenant"
+                                                   required
+                                                   autofocus>
+                                        </div>
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Must be between 0.01 and KSh {{ charge.balance|floatformat:0 }}
+                                            </small>
+                                            <br>
+                                            <small class="text-warning">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                                Amount entered cannot exceed the outstanding balance.
+                                            </small>
+                                        </div>
+                                        <!-- Quick Amount Buttons -->
+                                        <div class="mt-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary quick-amount" data-amount="{{ charge.balance }}">
+                                                Full Amount
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary quick-amount" data-amount="{{ charge.balance|floatformat:0|slice:'0:-1' }}0">
+                                                90%
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary quick-amount" data-amount="{{ charge.balance|floatformat:0|slice:'0:-1' }}">
+                                                50%
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-success w-100 mt-2"
+                                            onclick="return confirm('Approve this proof? This will create a payment record for the entered amount.');">
+                                        <i class="fas fa-check me-1"></i>
+                                        Approve & Record Payment
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Reject Section -->
+                        <div class="col-md-6 mt-3 mt-md-0">
+                            <div class="p-3 border rounded h-100">
+                                <h5 class="text-danger">
+                                    <i class="fas fa-times-circle me-2"></i>
+                                    Reject Proof
+                                </h5>
+                                <p class="text-muted small">
+                                    Reject this proof and request the tenant to upload a new one.
+                                </p>
+                                <form method="post" id="rejectForm">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="reject">
+                                    <div class="mb-2">
+                                        <label for="rejectionReason" class="form-label">
+                                            Rejection Reason <span class="text-danger">*</span>
+                                        </label>
+                                        <textarea name="rejection_reason" 
+                                                  id="rejectionReason" 
+                                                  class="form-control" 
+                                                  rows="3"
+                                                  placeholder="Explain why this proof is being rejected..."
+                                                  required></textarea>
+                                        <small class="text-muted char-counter">500 characters remaining</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-danger w-100 mt-2"
+                                            onclick="return confirm('Reject this proof? The tenant will be notified.');">
+                                        <i class="fas fa-times me-1"></i>
+                                        Reject Proof
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif is_verified %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>This proof has been verified.</strong>
+                <br>
+                Verified by: {{ charge.proof_verified_by.get_full_name|default:charge.proof_verified_by.email }}
+                <br>
+                Verified on: {{ charge.proof_verified_at|date:"d M Y H:i" }}
+                <br>
+                Amount recorded: KSh {{ charge.amount_allocated|floatformat:0 }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ───────────────────────────────────────── -->
+    <!-- TENANT INFORMATION                       -->
+    <!-- ───────────────────────────────────────── -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user me-2"></i>
+                        Tenant Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="text-muted small">Full Name</label>
+                            <p><strong>{{ charge.tenancy.tenant.full_name }}</strong></p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Email</label>
+                            <p>{{ charge.tenancy.tenant.user.email|default:"—" }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Phone</label>
+                            <p>{{ charge.tenancy.tenant.phone|default:"—" }}</p>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-4">
+                            <label class="text-muted small">Unit</label>
+                            <p>
+                                <strong>{{ charge.tenancy.unit.unit_number }}</strong>
+                                <br>
+                                <small class="text-muted">{{ charge.tenancy.unit.prop.name }}</small>
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Tenancy Status</label>
+                            <p>
+                                <span class="badge {{ charge.tenancy.get_status_badge }}">
+                                    {{ charge.tenancy.get_status_display }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted small">Monthly Rent</label>
+                            <p><strong>KSh {{ charge.tenancy.monthly_rent|floatformat:0 }}</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ─────────────────────────────────────────
+        // AUTO-REFRESH FOR PENDING APPROVALS
+        // ─────────────────────────────────────────
+        {% if charge.proof_status == 'PENDING' %}
+        let refreshCount = 0;
+        const maxRefreshes = 10;
+        setInterval(function() {
+            refreshCount++;
+            if (refreshCount >= maxRefreshes) return;
+            if (!document.hidden) {
+                location.reload();
+            }
+        }, 30000);
+        {% endif %}
+
+        // ─────────────────────────────────────────
+        // CHARACTER COUNTER FOR REJECTION REASON
+        // ─────────────────────────────────────────
+        const rejectionTextarea = document.getElementById('rejectionReason');
+        if (rejectionTextarea) {
+            rejectionTextarea.addEventListener('input', function() {
+                const maxLength = 500;
+                const remaining = maxLength - this.value.length;
+                const counter = this.parentElement.querySelector('.char-counter');
+                if (counter) {
+                    counter.textContent = `${remaining} characters remaining`;
+                    counter.style.color = remaining < 0 ? 'var(--danger)' : 'var(--text-secondary)';
+                }
+            });
+        }
+
+        // ─────────────────────────────────────────
+        // QUICK AMOUNT BUTTONS
+        // ─────────────────────────────────────────
+        const paidAmountInput = document.getElementById('paidAmount');
+        const maxAmount = {{ charge.balance|floatformat:0 }};
+        
+        document.querySelectorAll('.quick-amount').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                let amount = parseFloat(this.getAttribute('data-amount'));
+                if (amount > maxAmount) {
+                    amount = maxAmount;
+                }
+                paidAmountInput.value = amount.toFixed(2);
+                // Trigger validation
+                paidAmountInput.dispatchEvent(new Event('input'));
+            });
+        });
+
+        // ─────────────────────────────────────────
+        // VALIDATE PAID AMOUNT
+        // ─────────────────────────────────────────
+        if (paidAmountInput) {
+            paidAmountInput.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                const maxAmountFloat = parseFloat(maxAmount);
+                
+                if (isNaN(value) || value <= 0) {
+                    this.setCustomValidity('Please enter a valid amount greater than 0.');
+                    this.classList.add('is-invalid');
+                } else if (value > maxAmountFloat) {
+                    this.setCustomValidity(`Amount cannot exceed KSh ${maxAmountFloat.toFixed(2)}`);
+                    this.classList.add('is-invalid');
+                } else {
+                    this.setCustomValidity('');
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                }
+            });
+
+            // Auto-select text on focus
+            paidAmountInput.addEventListener('focus', function() {
+                this.select();
+            });
+        }
+
+        // ─────────────────────────────────────────
+        // KEYBOARD SHORTCUT: Ctrl+Enter to approve
+        // ─────────────────────────────────────────
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                const approveForm = document.getElementById('approveForm');
+                if (approveForm) {
+                    const paidAmount = document.getElementById('paidAmount');
+                    if (paidAmount && paidAmount.value) {
+                        approveForm.submit();
+                    } else {
+                        paidAmount.focus();
+                        paidAmount.classList.add('is-invalid');
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

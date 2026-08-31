@@ -1,3 +1,4 @@
+from portal.models import TransferRequest
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -11,7 +12,7 @@ from decimal import Decimal
 from accounts.permissions import require_capability, Cap
 from audit.services import get_client_ip, log_action, Action
 from tenancies.models import Tenancy
-from properties.models import Property
+from properties.models import Property, Unit
 from notifications.models import notify_org_admins, notify, Notification
 
 from .models import Payment, Charge
@@ -545,23 +546,78 @@ def rent_notice_review(request, pk):
 # ─────────────────────────────────────────
 # ADMIN GENERATE RENTS BUTTON
 # ─────────────────────────────────────────
+# finance/views.py - Update trigger_rent_generation
 
 @login_required
 @require_capability(Cap.MANAGE_FINANCE)
 @require_POST
 def trigger_rent_generation(request):
-    """Admin button — queues the Celery task for this org."""
-    from finance.tasks import admin_generate_rents_for_org
+    """Admin button — queues the Celery task or runs synchronously if Celery is unavailable."""
+    from finance.utils.celery_utils import is_celery_available
+    from django.conf import settings
+    import logging
+
+    logger = logging.getLogger(__name__)
     org = request.user.organization
-    admin_generate_rents_for_org.delay(
-        organization_id=str(org.id),
-        triggered_by_user_id=str(request.user.id),
-    )
-    messages.success(
-        request,
-        'Rent generation has been queued. '
-        'You will receive a notification when it completes.'
-    )
+
+    try:
+        # Check if Celery is available
+        celery_available = is_celery_available()
+
+        # Check if we're in eager mode (development)
+        is_eager = getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False)
+
+        if celery_available and not is_eager:
+            # Use Celery (production mode)
+            from finance.tasks import admin_generate_rents_for_org
+
+            # Queue the task
+            result = admin_generate_rents_for_org.delay(
+                organization_id=str(org.id),
+                triggered_by_user_id=str(request.user.id),
+            )
+
+            messages.success(
+                request,
+                f'Rent generation has been queued (Task ID: {result.id}). '
+                'You will receive a notification when it completes.'
+            )
+            logger.info(
+                f"Rent generation queued: task_id={result.id}, org={org.id}")
+
+        else:
+            # Run synchronously (development mode or fallback)
+            from finance.services import rent_service
+            from datetime import datetime
+
+            now = datetime.now()
+            year = now.year
+            month = now.month
+
+            count = rent_service.generate_rent_charges(
+                org, year, month,
+                actor=request.user,
+                ip=get_client_ip(request)
+            )
+
+            if count:
+                messages.success(
+                    request,
+                    f'Rent charges generated successfully! {count} charge(s) created.'
+                )
+            else:
+                messages.info(
+                    request,
+                    'No new rent charges generated — already generated for this month.'
+                )
+
+    except Exception as e:
+        logger.exception(f'Failed to generate rent: {str(e)}')
+        messages.error(
+            request,
+            'An error occurred while generating rent. Please try again or contact support.'
+        )
+
     return redirect('finance:rent_notice_list')
 
 
@@ -684,28 +740,57 @@ def _notify_tenant_maintenance(mr, org, message):
 @login_required
 @require_capability(Cap.VIEW_FINANCE)
 def moveout_request_list(request):
-    from portal.models import MoveOutRequest
     org = request.user.organization
-    status = request.GET.get('status', '')
+
+    selected_status = request.GET.get('status', '')
 
     qs = MoveOutRequest.objects.filter(
         organization=org
     ).select_related(
-        'tenant', 'tenancy', 'tenancy__unit', 'tenancy__unit__prop'
-    ).order_by('-created_at')
+        'tenant',
+        'tenancy',
+        'tenancy__unit',
+        'tenancy__unit__prop'
+    ).order_by(
+        '-created_at'
+    )
 
-    if status:
-        qs = qs.filter(status=status)
+    if selected_status:
+        qs = qs.filter(
+            status=selected_status
+        )
+
+    status_options = []
+
+    for value, label in MoveOutRequest.Status.choices:
+        status_options.append({
+            'value': value,
+            'label': label,
+            'selected': value == selected_status,
+        })
 
     context = {
-        'page_title':      'Move-Out Requests',
-        'requests':        qs,
-        'status_choices':  MoveOutRequest.Status.choices,
-        'selected_status': status,
-        'pending_count':   qs.filter(status='PENDING').count(),
-        'inspection_count': qs.filter(status='INSPECTION').count(),
+        'page_title': 'Move-Out Requests',
+        'requests': qs,
+
+        'status_choices': MoveOutRequest.Status.choices,
+        'status_options': status_options,
+        'selected_status': selected_status,
+
+        'pending_count': qs.filter(
+            status='PENDING'
+        ).count(),
+
+        'inspection_count': qs.filter(
+            status='INSPECTION'
+        ).count(),
     }
-    return render(request, 'finance/moveout_request_list.html', context)
+
+    return render(
+        request,
+        'finance/moveout_request_list.html',
+        context
+    )
 
 
 @login_required
@@ -844,28 +929,60 @@ def _notify_tenant_moveout(mor, org, message):
 @login_required
 @require_capability(Cap.VIEW_FINANCE)
 def transfer_request_list(request):
-    from portal.models import TransferRequest
+
     org = request.user.organization
-    status = request.GET.get('status', '')
+
+    selected_status = request.GET.get('status', '')
 
     qs = TransferRequest.objects.filter(
         organization=org
     ).select_related(
-        'tenant', 'tenancy', 'tenancy__unit',
-        'requested_unit', 'tenancy__unit__prop',
-    ).order_by('-created_at')
+        'tenant',
+        'tenancy',
+        'tenancy__unit',
+        'requested_unit',
+        'tenancy__unit__prop',
+    ).order_by(
+        '-created_at'
+    )
 
-    if status:
-        qs = qs.filter(status=status)
+    if selected_status:
+        qs = qs.filter(
+            status=selected_status
+        )
+
+
+# Prepare status options for the template.
+# This avoids using == comparisons inside the Django template.
+    status_options = []
+
+    for value, label in TransferRequest.Status.choices:
+        status_options.append({
+            'value': value,
+            'label': label,
+            'selected': value == selected_status,
+        })
 
     context = {
-        'page_title':      'Transfer Requests',
-        'requests':        qs,
-        'status_choices':  TransferRequest.Status.choices,
-        'selected_status': status,
-        'pending_count':   qs.filter(status='PENDING').count(),
+        'page_title': 'Transfer Requests',
+        'requests': qs,
+
+        # Keep this if it is used elsewhere in the template.
+        'status_choices': TransferRequest.Status.choices,
+
+        'selected_status': selected_status,
+        'status_options': status_options,
+
+        'pending_count': qs.filter(
+            status='PENDING'
+        ).count(),
     }
-    return render(request, 'finance/transfer_request_list.html', context)
+
+    return render(
+        request,
+        'finance/transfer_request_list.html',
+        context
+    )
 
 
 @login_required
@@ -881,230 +998,538 @@ def transfer_request_detail(request, pk):
     from finance.models import (
         DepositAccount, DepositMovement, Charge
     )
-    org = request.user.organization
-    tr = get_object_or_404(TransferRequest, pk=pk, organization=org,
-                           status='PENDING')
+    from django.http import Http404
+    from django.core.exceptions import PermissionDenied
+    from decimal import Decimal
+    import logging
 
+    logger = logging.getLogger(__name__)
+    org = request.user.organization
+
+    # ─────────────────────────────────────────
+    # 1. VALIDATE UUID FORMAT
+    # ─────────────────────────────────────────
+    try:
+        # Validate UUID format before querying
+        from uuid import UUID
+        UUID(str(pk))
+    except (ValueError, TypeError, AttributeError):
+        logger.warning(f"Invalid UUID format attempted: {pk}")
+        raise Http404("Invalid transfer request ID")
+
+    # ─────────────────────────────────────────
+    # 2. FETCH TRANSFER REQUEST WITH SECURITY
+    # ─────────────────────────────────────────
+    try:
+        tr = get_object_or_404(
+            TransferRequest.objects.select_related(
+                'tenant',
+                'tenant__user',
+                'tenancy',
+                'tenancy__unit',
+                'tenancy__unit__prop',
+                'requested_unit',
+                'requested_unit__prop',
+                'reviewed_by',
+                'bypassed_by',
+            ),
+            pk=pk,
+            organization=org  # Ensures user can only access their org's transfers
+        )
+    except (ValueError, TypeError):
+        raise Http404("Invalid transfer request ID")
+
+    # ─────────────────────────────────────────
+    # 3. ADDITIONAL SECURITY CHECKS
+    # ─────────────────────────────────────────
+
+    # Check that the tenancy belongs to the same organization
+    if tr.tenancy.organization_id != org.id:
+        logger.warning(
+            f"Organization mismatch: Transfer {tr.pk} belongs to "
+            f"{tr.tenancy.organization_id}, user org is {org.id}"
+        )
+        raise PermissionDenied(
+            "You don't have permission to view this transfer request.")
+
+    # Check that the requested unit belongs to the same organization
+    if tr.requested_unit.prop.organization_id != org.id:
+        logger.warning(
+            f"Organization mismatch: Requested unit {tr.requested_unit.pk} "
+            f"belongs to {tr.requested_unit.prop.organization_id}, user org is {org.id}"
+        )
+        raise PermissionDenied(
+            "You don't have permission to view this transfer request.")
+
+    # Verify the tenant belongs to the organization
+    if tr.tenant.organization_id != org.id:
+        logger.warning(
+            f"Organization mismatch: Tenant {tr.tenant.pk} "
+            f"belongs to {tr.tenant.organization_id}, user org is {org.id}"
+        )
+        raise PermissionDenied(
+            "You don't have permission to view this transfer request.")
+
+    # ─────────────────────────────────────────
+    # 4. CHECK REQUEST STATUS AND SHOW MESSAGE
+    # ─────────────────────────────────────────
+    if tr.status != 'PENDING':
+        messages.info(
+            request,
+            f'This transfer request has already been {tr.get_status_display().lower()}.'
+        )
+        # If already approved, verify it was completed correctly
+        if tr.status == 'APPROVED' and not tr.completed_at:
+            logger.warning(
+                f"Transfer {tr.pk} is APPROVED but missing completed_at timestamp"
+            )
+            # Optionally fix: tr.completed_at = tr.reviewed_at or timezone.now()
+
+    # ─────────────────────────────────────────
+    # 5. HANDLE POST REQUESTS (APPROVE/REJECT)
+    # ─────────────────────────────────────────
     if request.method == 'POST':
         action = request.POST.get('action')
 
+        # Validate action
+        if action not in ['approve', 'reject']:
+            messages.error(request, 'Invalid action.')
+            return redirect('finance:transfer_request_detail', pk=pk)
+
+        # Only allow actions on pending requests
+        if tr.status != 'PENDING':
+            messages.error(request, 'This request has already been processed.')
+            return redirect('finance:transfer_request_detail', pk=pk)
+
+        # ─────────────────────────────────────────
+        # 6. APPROVE TRANSFER
+        # ─────────────────────────────────────────
         if action == 'approve':
-            with transaction.atomic():
-                old_tenancy = tr.tenancy
-                old_unit = old_tenancy.unit
-                new_unit = tr.requested_unit
-                effective_date = tr.effective_date or tr.requested_date
 
-                # 1. End old tenancy
-                old_tenancy.status = Tenancy.Status.TRANSFERRED
-                old_tenancy.end_date = effective_date
-                old_tenancy.save(update_fields=['status', 'end_date'])
+            # Additional pre-approval validations
+            try:
+                # Verify the requested unit is still vacant
+                if tr.requested_unit.status != Unit.Status.VACANT:
+                    messages.error(
+                        request,
+                        f'Unit {tr.requested_unit.unit_number} is no longer vacant. '
+                        f'Current status: {tr.requested_unit.get_status_display()}'
+                    )
+                    return redirect('finance:transfer_request_detail', pk=pk)
 
-                # 2. Free old unit
-                old_unit.status = old_unit.Status.VACANT
-                old_unit.save(update_fields=['status'])
+                # Verify the current tenancy is still active
+                if tr.tenancy.status != Tenancy.Status.ACTIVE:
+                    messages.error(
+                        request,
+                        f'The current tenancy is no longer active. '
+                        f'Current status: {tr.tenancy.get_status_display()}'
+                    )
+                    return redirect('finance:transfer_request_detail', pk=pk)
 
-                # 3. Create new tenancy (starts day after effective_date)
-                from dateutil.relativedelta import relativedelta
-                new_start = effective_date + relativedelta(days=1)
-                new_tenancy = Tenancy.objects.create(
-                    organization=org,
-                    tenant=tr.tenant,
-                    unit=new_unit,
-                    start_date=new_start,
-                    monthly_rent=new_unit.rent_amount,
-                    required_deposit=new_unit.deposit_amount,
-                    billing_day=old_tenancy.billing_day,
-                    status=Tenancy.Status.ACTIVE,
-                    created_by=request.user,
-                )
+                # Verify effective date is valid
+                if tr.effective_date:
+                    from datetime import date
+                    if tr.effective_date < date.today():
+                        messages.error(
+                            request,
+                            f'Effective date ({tr.effective_date}) is in the past. '
+                            f'Please update the date before approving.'
+                        )
+                        return redirect('finance:transfer_request_detail', pk=pk)
 
-                # 4. Occupy new unit
-                new_unit.status = new_unit.Status.OCCUPIED
-                new_unit.save(update_fields=['status'])
+            except Exception as e:
+                logger.error(f"Pre-approval validation failed: {str(e)}")
+                messages.error(request, 'Validation failed. Please try again.')
+                return redirect('finance:transfer_request_detail', pk=pk)
 
-                # 5. Carry deposit
-                old_deposit = tr.old_deposit
-                new_deposit = tr.new_deposit
-                diff = tr.deposit_difference  # positive = tenant owes
+            # ─────────────────────────────────────────
+            # 7. EXECUTE TRANSFER WITH ATOMIC TRANSACTION
+            # ─────────────────────────────────────────
+            try:
+                with transaction.atomic():
+                    old_tenancy = tr.tenancy
+                    old_unit = old_tenancy.unit
+                    new_unit = tr.requested_unit
+                    effective_date = tr.effective_date or tr.requested_date
 
-                try:
-                    old_da = old_tenancy.deposit_account
-                    old_balance = old_da.balance
-                except Exception:
-                    old_balance = Decimal('0')
+                    # Lock critical rows to prevent race conditions
+                    locked_old_tenancy = Tenancy.objects.select_for_update().get(pk=old_tenancy.pk)
+                    locked_new_unit = Unit.objects.select_for_update().get(pk=new_unit.pk)
+                    locked_old_unit = Unit.objects.select_for_update().get(pk=old_unit.pk)
 
-                new_da = DepositAccount.objects.create(
-                    organization=org,
-                    tenancy=new_tenancy,
-                    required_amount=new_unit.deposit_amount,
-                )
-                # Transfer existing deposit balance
-                if old_balance > 0:
-                    DepositMovement.objects.create(
-                        deposit_account=new_da,
-                        movement_type=DepositMovement.Type.TRANSFER_IN,
-                        amount=old_balance,
-                        reason=f'Transferred from unit {old_unit.unit_number}',
+                    # Re-verify unit status after lock
+                    if locked_new_unit.status != Unit.Status.VACANT:
+                        raise ValueError(
+                            f'Unit {new_unit.unit_number} is no longer vacant.')
+
+                    if locked_old_unit.status != Unit.Status.OCCUPIED:
+                        raise ValueError(
+                            f'Unit {old_unit.unit_number} is no longer occupied.')
+
+                    # 1. End old tenancy
+                    locked_old_tenancy.status = Tenancy.Status.TRANSFERRED
+                    locked_old_tenancy.end_date = effective_date
+                    locked_old_tenancy.save(
+                        update_fields=['status', 'end_date', 'updated_at'])
+
+                    # 2. Free old unit
+                    locked_old_unit.status = locked_old_unit.Status.VACANT
+                    locked_old_unit.save(
+                        update_fields=['status', 'updated_at'])
+
+                    # 3. Create new tenancy (starts day after effective_date)
+                    from dateutil.relativedelta import relativedelta
+                    new_start = effective_date + relativedelta(days=1)
+                    new_tenancy = Tenancy.objects.create(
+                        organization=org,
+                        tenant=tr.tenant,
+                        unit=locked_new_unit,
+                        start_date=new_start,
+                        monthly_rent=locked_new_unit.rent_amount,
+                        required_deposit=locked_new_unit.deposit_amount,
+                        billing_day=locked_old_tenancy.billing_day,
+                        status=Tenancy.Status.ACTIVE,
                         created_by=request.user,
                     )
-                    # Debit old account
-                    DepositMovement.objects.create(
-                        deposit_account=old_da,
-                        movement_type=DepositMovement.Type.TRANSFER_OUT,
-                        amount=-old_balance,
-                        reason=f'Transferred to unit {new_unit.unit_number}',
-                        created_by=request.user,
-                    )
 
-                # If tenant owes top-up, create a deposit charge on new tenancy
-                if diff > 0:
-                    Charge.objects.create(
+                    # 4. Occupy new unit
+                    locked_new_unit.status = locked_new_unit.Status.OCCUPIED
+                    locked_new_unit.save(
+                        update_fields=['status', 'updated_at'])
+
+                    # 5. Carry deposit
+                    diff = tr.deposit_difference
+
+                    try:
+                        old_da = locked_old_tenancy.deposit_account
+                        old_balance = old_da.balance
+                    except Exception:
+                        old_balance = Decimal('0')
+
+                    new_da = DepositAccount.objects.create(
                         organization=org,
                         tenancy=new_tenancy,
-                        charge_type=Charge.Type.DEPOSIT,
-                        description=f'Deposit top-up — transfer to {new_unit.unit_number}',
-                        amount=diff,
-                        due_date=new_start,
-                        is_deposit_charge=True,
+                        required_amount=locked_new_unit.deposit_amount,
                     )
 
-                # 6. Create immutable Transfer record
-                Transfer.objects.create(
+                    # Transfer existing deposit balance
+                    if old_balance > 0:
+                        DepositMovement.objects.create(
+                            deposit_account=new_da,
+                            movement_type=DepositMovement.Type.TRANSFER_IN,
+                            amount=old_balance,
+                            reason=f'Transferred from unit {locked_old_unit.unit_number}',
+                            created_by=request.user,
+                        )
+                        # Debit old account
+                        DepositMovement.objects.create(
+                            deposit_account=old_da,
+                            movement_type=DepositMovement.Type.TRANSFER_OUT,
+                            amount=-old_balance,
+                            reason=f'Transferred to unit {locked_new_unit.unit_number}',
+                            created_by=request.user,
+                        )
+
+                    # If tenant owes top-up, create a deposit charge on new tenancy
+                    if diff > 0:
+                        Charge.objects.create(
+                            organization=org,
+                            tenancy=new_tenancy,
+                            charge_type=Charge.Type.DEPOSIT,
+                            description=f'Deposit top-up — transfer to {locked_new_unit.unit_number}',
+                            amount=diff,
+                            due_date=new_start,
+                            is_deposit_charge=True,
+                            created_by=request.user,
+                        )
+
+                    # 6. Create immutable Transfer record
+                    Transfer.objects.create(
+                        organization=org,
+                        old_tenancy=locked_old_tenancy,
+                        new_tenancy=new_tenancy,
+                        tenant=tr.tenant,
+                        transfer_date=effective_date,
+                        old_monthly_rent=locked_old_tenancy.monthly_rent,
+                        new_monthly_rent=locked_new_unit.rent_amount,
+                        old_deposit_held=old_balance,
+                        new_deposit_required=locked_new_unit.deposit_amount,
+                        deposit_difference=diff,
+                        deposit_disposition=(
+                            Transfer.DepositDisposition.TOPUP if diff > 0
+                            else Transfer.DepositDisposition.HOLD if diff == 0
+                            else Transfer.DepositDisposition.REFUND
+                        ),
+                        created_by=request.user,
+                    )
+
+                    # 7. Approve the request
+                    tr.status = TransferRequest.Status.APPROVED
+                    tr.reviewed_by = request.user
+                    tr.reviewed_at = timezone.now()
+                    tr.completed_at = timezone.now()
+                    tr.save(update_fields=[
+                        'status', 'reviewed_by', 'reviewed_at', 'completed_at', 'updated_at'
+                    ])
+
+                # ─────────────────────────────────────────
+                # 8. SUCCESS - NOTIFY TENANT
+                # ─────────────────────────────────────────
+                tenant_user = getattr(tr.tenant, 'user', None)
+                if tenant_user:
+                    msg = (
+                        f'Your transfer to unit {locked_new_unit.unit_number} has been approved. '
+                        f'Your new tenancy starts {new_start.strftime("%d %b %Y")}.'
+                    )
+                    if diff > 0:
+                        msg += f' A deposit top-up of KSh {diff:,.0f} is required.'
+                    notify(
+                        recipient=tenant_user,
+                        message=msg,
+                        url='/portal/transfer/',
+                        level='success',
+                        notification_type='TRANSFER_UPDATE',
+                        organization=org,
+                    )
+
+                # Notify org admins
+                notify_org_admins(
                     organization=org,
-                    old_tenancy=old_tenancy,
-                    new_tenancy=new_tenancy,
-                    tenant=tr.tenant,
-                    transfer_date=effective_date,
-                    old_monthly_rent=old_tenancy.monthly_rent,
-                    new_monthly_rent=new_unit.rent_amount,
-                    old_deposit_held=old_balance,
-                    new_deposit_required=new_unit.deposit_amount,
-                    deposit_difference=diff,
-                    deposit_disposition=(
-                        Transfer.DepositDisposition.TOPUP if diff > 0
-                        else Transfer.DepositDisposition.HOLD if diff == 0
-                        else Transfer.DepositDisposition.REFUND
+                    message=(
+                        f'Transfer approved for {tr.tenant.full_name}: '
+                        f'{locked_old_unit.unit_number} → {locked_new_unit.unit_number}'
                     ),
-                    created_by=request.user,
-                )
-
-                # 7. Approve the request
-                tr.status = TransferRequest.Status.APPROVED
-                tr.reviewed_by = request.user
-                tr.reviewed_at = timezone.now()
-                tr.save(update_fields=[
-                        'status', 'reviewed_by', 'reviewed_at', 'updated_at'])
-
-            tenant_user = getattr(tr.tenant, 'user', None)
-            if tenant_user:
-                msg = (
-                    f'Your transfer to unit {new_unit.unit_number} has been approved. '
-                    f'Your new tenancy starts {new_start.strftime("%d %b %Y")}.'
-                )
-                if diff > 0:
-                    msg += f' A deposit top-up of KSh {diff:,.0f} is required.'
-                notify(
-                    recipient=tenant_user, message=msg,
-                    url='/portal/transfer/',
+                    url=reverse('finance:transfer_request_detail',
+                                args=[tr.pk]),
                     level='success',
                     notification_type='TRANSFER_UPDATE',
-                    organization=org,
+                    actor=request.user,
                 )
 
-            messages.success(
-                request,
-                f'Transfer approved. New tenancy starts {new_start.strftime("%d %b %Y")}.'
-            )
-            return redirect('finance:transfer_request_list')
+                messages.success(
+                    request,
+                    f'Transfer approved. New tenancy starts {new_start.strftime("%d %b %Y")}.'
+                )
+                return redirect('finance:transfer_request_list')
 
+            except Tenancy.DoesNotExist:
+                logger.error(
+                    f"Tenancy not found during transfer approval: {old_tenancy.pk}")
+                messages.error(
+                    request, 'The current tenancy no longer exists.')
+                return redirect('finance:transfer_request_detail', pk=pk)
+
+            except Unit.DoesNotExist:
+                logger.error(f"Unit not found during transfer approval")
+                messages.error(request, 'A required unit no longer exists.')
+                return redirect('finance:transfer_request_detail', pk=pk)
+
+            except ValueError as e:
+                logger.error(f"Transfer validation error: {str(e)}")
+                messages.error(request, str(e))
+                return redirect('finance:transfer_request_detail', pk=pk)
+
+            except Exception as e:
+                logger.exception(
+                    f"Unexpected error during transfer approval: {str(e)}")
+                messages.error(
+                    request,
+                    'An unexpected error occurred. Please contact support.'
+                )
+                return redirect('finance:transfer_request_detail', pk=pk)
+
+        # ─────────────────────────────────────────
+        # 9. REJECT TRANSFER
+        # ─────────────────────────────────────────
         elif action == 'reject':
-            tr.status = TransferRequest.Status.REJECTED
-            tr.rejection_note = request.POST.get('rejection_note', '').strip()
-            tr.reviewed_by = request.user
-            tr.reviewed_at = timezone.now()
-            tr.save(update_fields=[
-                'status', 'rejection_note', 'reviewed_by', 'reviewed_at', 'updated_at'])
+            rejection_note = request.POST.get('rejection_note', '').strip()
 
-            tenant_user = getattr(tr.tenant, 'user', None)
-            if tenant_user:
-                notify(
-                    recipient=tenant_user,
-                    message=(
-                        f'Your transfer request to unit {tr.requested_unit.unit_number} '
-                        f'was rejected. Reason: {tr.rejection_note or "Contact agency."}'
-                    ),
-                    url='/portal/transfer/',
-                    level='danger',
-                    notification_type='TRANSFER_UPDATE',
-                    organization=org,
+            # Validate rejection note
+            if not rejection_note:
+                messages.error(
+                    request, 'Please provide a reason for rejection.')
+                return redirect('finance:transfer_request_detail', pk=pk)
+
+            # Limit rejection note length
+            if len(rejection_note) > 2000:
+                messages.error(
+                    request,
+                    'Rejection note cannot exceed 2000 characters.'
                 )
-            messages.warning(request, 'Transfer request rejected.')
-            return redirect('finance:transfer_request_list')
+                return redirect('finance:transfer_request_detail', pk=pk)
 
+            try:
+                with transaction.atomic():
+                    tr.status = TransferRequest.Status.REJECTED
+                    tr.rejection_note = rejection_note
+                    tr.reviewed_by = request.user
+                    tr.reviewed_at = timezone.now()
+                    tr.save(update_fields=[
+                        'status', 'rejection_note', 'reviewed_by', 'reviewed_at', 'updated_at'
+                    ])
+
+                # Notify tenant
+                tenant_user = getattr(tr.tenant, 'user', None)
+                if tenant_user:
+                    notify(
+                        recipient=tenant_user,
+                        message=(
+                            f'Your transfer request to unit {tr.requested_unit.unit_number} '
+                            f'was rejected. Reason: {rejection_note}'
+                        ),
+                        url='/portal/transfer/',
+                        level='danger',
+                        notification_type='TRANSFER_UPDATE',
+                        organization=org,
+                    )
+
+                # Notify org admins
+                notify_org_admins(
+                    organization=org,
+                    message=(
+                        f'Transfer request rejected for {tr.tenant.full_name}: '
+                        f'{tr.tenancy.unit.unit_number} → {tr.requested_unit.unit_number}'
+                    ),
+                    url=reverse('finance:transfer_request_detail',
+                                args=[tr.pk]),
+                    level='warning',
+                    notification_type='TRANSFER_UPDATE',
+                    actor=request.user,
+                )
+
+                messages.warning(request, 'Transfer request rejected.')
+                return redirect('finance:transfer_request_list')
+
+            except Exception as e:
+                logger.exception(f"Error rejecting transfer: {str(e)}")
+                messages.error(
+                    request,
+                    'An unexpected error occurred. Please try again.'
+                )
+                return redirect('finance:transfer_request_detail', pk=pk)
+
+    # ─────────────────────────────────────────
+    # 10. RENDER CONTEXT
+    # ─────────────────────────────────────────
     context = {
         'page_title': (
             f'Transfer — {tr.tenant.full_name}: '
             f'{tr.tenancy.unit.unit_number} → {tr.requested_unit.unit_number}'
         ),
         'tr': tr,
+        'can_approve': tr.status == 'PENDING',
+        'can_reject': tr.status == 'PENDING',
+        'is_approved': tr.status == 'APPROVED',
+        'is_rejected': tr.status == 'REJECTED',
+        'is_completed': tr.status == 'COMPLETED',
     }
     return render(request, 'finance/transfer_request_detail.html', context)
-
 
 # ─────────────────────────────────────────
 # VACANCY MANAGEMENT
 # ─────────────────────────────────────────
 
+
 @login_required
 @require_capability(Cap.VIEW_FINANCE)
 def vacancy_list(request):
     org = request.user.organization
+
     prop = request.GET.get('property', '')
 
     units = Unit.objects.filter(
         prop__organization=org,
         status=Unit.Status.VACANT,
         is_archived=False,
-    ).select_related('prop', 'house_type').order_by('prop', 'unit_number')
+    ).select_related(
+        'prop',
+        'house_type'
+    ).order_by(
+        'prop',
+        'unit_number'
+    )
 
     if prop:
         units = units.filter(prop__id=prop)
 
     # Calculate days vacant for each unit
     today = timezone.now().date()
+
     unit_data = []
+
     for unit in units:
         # Find last tenancy end date
         last_tenancy = unit.tenancies.filter(
-            status__in=['ENDED', 'TERMINATED', 'TRANSFERRED']
-        ).order_by('-end_date').first()
+            status__in=[
+                'ENDED',
+                'TERMINATED',
+                'TRANSFERRED',
+            ]
+        ).order_by(
+            '-end_date'
+        ).first()
+
         days_vacant = (
-            today - last_tenancy.end_date).days if last_tenancy else None
+            (today - last_tenancy.end_date).days
+            if last_tenancy and last_tenancy.end_date
+            else None
+        )
 
         unit_data.append({
-            'unit':         unit,
-            'days_vacant':  days_vacant,
-            'last_tenant':  last_tenancy.tenant.full_name if last_tenancy else '—',
-            'vacated_date': last_tenancy.end_date if last_tenancy else None,
+            'unit': unit,
+            'days_vacant': days_vacant,
+            'last_tenant': (
+                last_tenancy.tenant.full_name
+                if last_tenancy
+                else '—'
+            ),
+            'vacated_date': (
+                last_tenancy.end_date
+                if last_tenancy
+                else None
+            ),
         })
 
     # Sort longest vacant first
     unit_data.sort(
-        key=lambda x: x['days_vacant'] if x['days_vacant'] is not None else -1,
+        key=lambda x: (
+            x['days_vacant']
+            if x['days_vacant'] is not None
+            else -1
+        ),
         reverse=True
     )
 
+    # Prepare properties with selected state.
+    # This avoids comparing a GET string with an integer in the template.
+    properties = list(
+        Property.objects.filter(
+            organization=org
+        ).exclude(
+            status='ARCHIVED'
+        ).order_by('name')
+    )
+
+    for property_obj in properties:
+        property_obj.selected = str(property_obj.pk) == str(prop)
+
     context = {
         'page_title': 'Vacant Units',
-        'unit_data':  unit_data,
-        'total':      len(unit_data),
-        'properties': Property.objects.filter(
-            organization=org).exclude(status='ARCHIVED'),
+        'unit_data': unit_data,
+        'total': len(unit_data),
+        'properties': properties,
         'selected_property': prop,
-        'potential_rent':    sum(u['unit'].rent_amount for u in unit_data),
+        'potential_rent': sum(
+            u['unit'].rent_amount
+            for u in unit_data
+        ),
     }
-    return render(request, 'finance/vacancy_list.html', context)
+
+    return render(
+        request,
+        'finance/vacancy_list.html',
+        context
+    )
 
 
 # ─────────────────────────────────────────
@@ -1147,3 +1572,239 @@ def admin_dashboard_kpis(request):
         'pending_transfers':  pending_transfers,
         'action_items':       pending_notices + open_maintenance + pending_moveouts + pending_transfers,
     })
+
+
+# finance/views.py - Updated charge_proof_verify
+
+@login_required
+@require_capability(Cap.VERIFY_PAYMENT)
+def charge_proof_verify(request, pk):
+    """
+    Admin verifies tenant's proof of payment for a charge.
+    Admin enters the actual amount paid and it checks against the balance.
+    """
+    from finance.models import Charge, Payment, PaymentAllocation
+    from decimal import Decimal
+
+    org = request.user.organization
+
+    # Get the charge
+    try:
+        charge = get_object_or_404(
+            Charge.objects.select_related(
+                'tenancy',
+                'tenancy__tenant',
+                'tenancy__tenant__user',
+                'tenancy__unit',
+                'tenancy__unit__prop',
+                'proof_verified_by',
+            ),
+            pk=pk,
+            organization=org
+        )
+    except (ValueError, TypeError):
+        messages.error(request, 'Invalid charge ID format.')
+        return redirect('finance:payment_list')
+
+    # Check if the charge has proof uploaded
+    if not charge.proof_of_payment:
+        messages.warning(
+            request, 'This charge does not have a proof of payment uploaded.')
+        return redirect('finance:payment_list')
+
+    # If already verified, show a read-only view
+    if charge.proof_status == Charge.ProofStatus.VERIFIED:
+        messages.info(request, 'This proof has already been verified.')
+        context = {
+            'page_title': f'Proof Verified - Charge #{charge.id}',
+            'charge': charge,
+            'tenant': charge.tenancy.tenant,
+            'tenancy': charge.tenancy,
+            'proof_url': charge.proof_of_payment.url if charge.proof_of_payment else None,
+            'is_verified': True,
+            'can_verify': False,
+        }
+        return render(request, 'finance/charge_proof_verify.html', context)
+
+    # Handle POST request
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'verify':
+            try:
+                # Get the paid amount from the form
+                paid_amount_str = request.POST.get('paid_amount', '').strip()
+
+                if not paid_amount_str:
+                    messages.error(request, 'Please enter the amount paid.')
+                    return redirect('finance:charge_proof_verify', pk=charge.pk)
+
+                # Remove commas and convert to Decimal
+                paid_amount = Decimal(paid_amount_str.replace(',', ''))
+
+                # Validate amount
+                if paid_amount <= Decimal('0'):
+                    messages.error(
+                        request, 'Paid amount must be greater than zero.')
+                    return redirect('finance:charge_proof_verify', pk=charge.pk)
+
+                # Check if paid amount exceeds the charge balance
+                balance = charge.balance
+
+                if paid_amount > balance:
+                    messages.error(
+                        request,
+                        f'Paid amount (KSh {paid_amount:,.0f}) exceeds the charge balance '
+                        f'(KSh {balance:,.0f}). Please enter a valid amount.'
+                    )
+                    return redirect('finance:charge_proof_verify', pk=charge.pk)
+
+                with transaction.atomic():
+                    # Mark proof as verified
+                    charge.proof_verified = True
+                    charge.proof_verified_at = timezone.now()
+                    charge.proof_verified_by = request.user
+                    charge.proof_status = Charge.ProofStatus.VERIFIED
+                    charge.save(update_fields=[
+                        'proof_verified', 'proof_verified_at',
+                        'proof_verified_by', 'proof_status'
+                    ])
+
+                    # Create a payment record
+                    payment = Payment.objects.create(
+                        organization=org,
+                        tenant=charge.tenancy.tenant,
+                        tenancy=charge.tenancy,
+                        amount=paid_amount,
+                        payment_date=timezone.now().date(),
+                        method=Payment.Method.OTHER,
+                        status=Payment.Status.VERIFIED,
+                        notes=f'Verified proof payment for charge #{charge.id}',
+                        proof_of_payment=charge.proof_of_payment,
+                        verified_by=request.user,
+                        verified_at=timezone.now(),
+                        created_by=request.user,
+                    )
+
+                    # Allocate payment to the charge
+                    PaymentAllocation.objects.create(
+                        payment=payment,
+                        charge=charge,
+                        amount=paid_amount,
+                    )
+
+                    # Calculate remaining balance
+                    remaining_balance = balance - paid_amount
+
+                    # Notify tenant
+                    tenant_user = getattr(charge.tenancy.tenant, 'user', None)
+                    if tenant_user:
+                        from notifications.models import notify
+                        notify(
+                            recipient=tenant_user,
+                            message=(
+                                f'Your proof of payment for charge #{charge.id} '
+                                f'has been verified and approved. '
+                                f'Amount paid: KSh {paid_amount:,.0f}. '
+                                f'Remaining balance: KSh {remaining_balance:,.0f}'
+                            ),
+                            url='/portal/payments/',
+                            level='success',
+                            notification_type='PAYMENT_VERIFIED',
+                            organization=org,
+                        )
+
+                    # Notify org admins
+                    notify_org_admins(
+                        organization=org,
+                        message=(
+                            f'Payment proof verified for {charge.tenancy.tenant.full_name}. '
+                            f'Charge #{charge.id}: KSh {paid_amount:,.0f} paid. '
+                            f'Remaining: KSh {remaining_balance:,.0f}'
+                        ),
+                        url=f'/finance/charges/{charge.pk}/verify-proof/',
+                        level='success',
+                        notification_type='PAYMENT_RECEIVED',
+                        actor=request.user,
+                    )
+
+                    # Success message
+                    if remaining_balance > 0:
+                        messages.success(
+                            request,
+                            f'Proof verified. Payment of KSh {paid_amount:,.0f} recorded. '
+                            f'Remaining balance: KSh {remaining_balance:,.0f}'
+                        )
+                    else:
+                        messages.success(
+                            request,
+                            f'Proof verified. Full payment of KSh {paid_amount:,.0f} recorded. '
+                            f'Charge is now fully paid.'
+                        )
+
+                    return redirect('finance:charge_proof_verify', pk=charge.pk)
+
+            except (ValueError, TypeError) as e:
+                messages.error(
+                    request, f'Invalid amount format. Please enter a valid number.')
+                return redirect('finance:charge_proof_verify', pk=charge.pk)
+            except Exception as e:
+                logger.exception(
+                    f'Error verifying proof for charge {charge.pk}: {str(e)}')
+                messages.error(
+                    request, 'An error occurred while verifying the proof. Please try again.')
+                return redirect('finance:charge_proof_verify', pk=charge.pk)
+
+        elif action == 'reject':
+            rejection_reason = request.POST.get('rejection_reason', '').strip()
+
+            if not rejection_reason:
+                messages.error(
+                    request, 'Please provide a reason for rejection.')
+                return redirect('finance:charge_proof_verify', pk=charge.pk)
+
+            if len(rejection_reason) > 500:
+                messages.error(
+                    request, 'Rejection reason cannot exceed 500 characters.')
+                return redirect('finance:charge_proof_verify', pk=charge.pk)
+
+            with transaction.atomic():
+                charge.proof_status = Charge.ProofStatus.REJECTED
+                charge.proof_rejection_reason = rejection_reason
+                charge.proof_verified = False
+                charge.save(update_fields=[
+                    'proof_status', 'proof_rejection_reason', 'proof_verified'
+                ])
+
+                # Notify tenant
+                tenant_user = getattr(charge.tenancy.tenant, 'user', None)
+                if tenant_user:
+                    from notifications.models import notify
+                    notify(
+                        recipient=tenant_user,
+                        message=(
+                            f'Your proof of payment for charge #{charge.id} '
+                            f'was rejected. Reason: {rejection_reason}. '
+                            f'Please upload a new proof.'
+                        ),
+                        url='/portal/payments/',
+                        level='danger',
+                        notification_type='PAYMENT_REJECTED',
+                        organization=org,
+                    )
+
+                messages.warning(
+                    request, 'Proof rejected. Tenant has been notified.')
+                return redirect('finance:charge_proof_verify', pk=charge.pk)
+
+    context = {
+        'page_title': f'Verify Proof - Charge #{charge.id}',
+        'charge': charge,
+        'tenant': charge.tenancy.tenant,
+        'tenancy': charge.tenancy,
+        'proof_url': charge.proof_of_payment.url if charge.proof_of_payment else None,
+        'is_verified': False,
+        'can_verify': True,
+        'balance': charge.balance,
+    }
+    return render(request, 'finance/charge_proof_verify.html', context)

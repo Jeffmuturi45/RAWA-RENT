@@ -1,59 +1,584 @@
 {% extends 'portal/base_portal.html' %}
+{% load static %}
+
 {% block title %}Payment History{% endblock %}
 {% block nav_payments %}active{% endblock %}
 
 {% block content %}
 
 <div class="rw-page-header">
-  <h1 class="rw-page-title">Payment History</h1>
-</div>
-
-<div class="rw-card">
-  <div class="rw-table-wrapper">
-    {% if payments %}
-    <table class="rw-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Amount</th>
-          <th>Method</th>
-          <th>Receipt</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for payment in payments %}
-        <tr>
-          <td>{{ payment.payment_date }}</td>
-          <td class="rw-table-amount credit">KSh {{ payment.amount|floatformat:0 }}</td>
-          <td>{{ payment.get_method_display }}</td>
-          <td>
-            {% if payment.receipt %}
-            <a href="{% url 'portal:receipt_detail' payment.receipt.pk %}"
-               class="rw-btn rw-btn-ghost rw-btn-sm">
-              <i class="fa fa-receipt me-1"></i>{{ payment.receipt.receipt_number }}
-            </a>
-            {% else %}
-            <span style="color:var(--text-secondary);font-size:13px;">—</span>
-            {% endif %}
-          </td>
-          <td>
-            <span class="rw-badge {{ payment.get_status_badge }}">
-              {{ payment.get_status_display }}
-            </span>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <div class="rw-empty">
-      <div class="rw-empty-icon"><i class="fa fa-money-bill-wave"></i></div>
-      <div class="rw-empty-title">No payments yet</div>
-      <div class="rw-empty-text">Your verified payments will appear here.</div>
+    <div>
+        <h1 class="rw-page-title">
+            <i class="fa fa-credit-card me-2"></i>
+            Payment History
+        </h1>
+        <p class="rw-page-subtitle">
+            Track your payments, upload proof of payments, and view your financial summary.
+        </p>
     </div>
-    {% endif %}
-  </div>
 </div>
 
+<!-- ───────────────────────────────────────── -->
+<!-- FINANCIAL SUMMARY CARDS                  -->
+<!-- ───────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="rw-card">
+            <div class="rw-card-body">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    <i class="fa fa-money-bill me-1"></i>
+                    Total Paid
+                </div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--success);">
+                    KSh {{ total_paid|floatformat:0|default:"0" }}
+                </div>
+                <small class="text-muted">All time payments</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="rw-card">
+            <div class="rw-card-body">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    <i class="fa fa-exclamation-triangle me-1"></i>
+                    Outstanding
+                </div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--danger);">
+                    KSh {{ total_outstanding|floatformat:0|default:"0" }}
+                </div>
+                <small class="text-muted">Pending charges</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="rw-card">
+            <div class="rw-card-body">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    <i class="fa fa-coins me-1"></i>
+                    Deposit
+                </div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--info);">
+                    KSh {{ total_deposit|floatformat:0|default:"0" }}
+                </div>
+                <small class="text-muted">Required deposit</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="rw-card">
+            <div class="rw-card-body">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    <i class="fa fa-file-invoice me-1"></i>
+                    Pending Proofs
+                </div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--warning);">
+                    {{ pending_proofs_count|default:"0" }}
+                </div>
+                <small class="text-muted">Awaiting verification</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ───────────────────────────────────────── -->
+<!-- DEPOSIT CHARGES SECTION                  -->
+<!-- ───────────────────────────────────────── -->
+{% if deposit_charges %}
+<div class="rw-card mb-4">
+    <div class="rw-card-header" style="border-left: 4px solid var(--info);">
+        <h2 class="rw-card-title">
+            <i class="fa fa-coins me-2" style="color: var(--info);"></i>
+            Deposit Balance
+        </h2>
+        <span class="rw-badge rw-badge-info">
+            KSh {{ total_deposit|floatformat:0 }}
+        </span>
+    </div>
+    <div class="rw-card-body">
+        <div class="rw-alert rw-alert-info mb-3">
+            <i class="fa fa-info-circle me-2"></i>
+            <strong>Deposit Information:</strong>
+            Your deposit is held as security. It will be refunded after your tenancy ends,
+            minus any outstanding charges or damages.
+        </div>
+        
+        <div class="table-responsive">
+            <table class="rw-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in deposit_charges %}
+                    <tr>
+                        <td>
+                            <span class="rw-badge rw-badge-info">
+                                <i class="fa fa-coins me-1"></i>
+                                Deposit
+                            </span>
+                        </td>
+                        <td>{{ item.charge.description|default:"Deposit" }}</td>
+                        <td class="rw-table-amount credit">
+                            KSh {{ item.balance|floatformat:0 }}
+                        </td>
+                        <td>
+                            {% if item.charge.proof_status == 'VERIFIED' %}
+                                <span class="rw-badge rw-badge-success">
+                                    <i class="fa fa-check-circle me-1"></i>
+                                    Verified
+                                </span>
+                            {% elif item.charge.proof_status == 'PENDING' %}
+                                <span class="rw-badge rw-badge-warning">
+                                    <i class="fa fa-clock me-1"></i>
+                                    Pending
+                                </span>
+                            {% elif item.charge.proof_status == 'REJECTED' %}
+                                <span class="rw-badge rw-badge-danger">
+                                    <i class="fa fa-times-circle me-1"></i>
+                                    Rejected
+                                </span>
+                            {% else %}
+                                <span class="rw-badge rw-badge-secondary">
+                                    No Proof
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.can_upload %}
+                                <button class="rw-btn rw-btn-sm rw-btn-primary upload-btn"
+                                        data-charge-id="{{ item.charge.pk }}"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#uploadModal">
+                                    <i class="fa fa-upload me-1"></i>
+                                    Upload Proof
+                                </button>
+                            {% elif item.charge.proof_status == 'REJECTED' %}
+                                <button class="rw-btn rw-btn-sm rw-btn-outline-danger upload-btn"
+                                        data-charge-id="{{ item.charge.pk }}"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#uploadModal">
+                                    <i class="fa fa-redo me-1"></i>
+                                    Re-upload
+                                </button>
+                                {% if item.charge.proof_rejection_reason %}
+                                <br>
+                                <small class="text-danger" style="font-size: 11px;">
+                                    <i class="fa fa-info-circle me-1"></i>
+                                    {{ item.charge.proof_rejection_reason|truncatechars:50 }}
+                                </small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted" style="font-size: 13px;">
+                                    <i class="fa fa-check-circle me-1" style="color: var(--success);"></i>
+                                    All clear
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ───────────────────────────────────────── -->
+<!-- OUTSTANDING CHARGES SECTION              -->
+<!-- ───────────────────────────────────────── -->
+{% if outstanding_charges %}
+<div class="rw-card mb-4">
+    <div class="rw-card-header" style="border-left: 4px solid var(--danger);">
+        <h2 class="rw-card-title">
+            <i class="fa fa-exclamation-triangle me-2" style="color: var(--danger);"></i>
+            Outstanding Charges
+        </h2>
+        <span class="rw-badge rw-badge-danger">
+            KSh {{ total_outstanding|floatformat:0 }}
+        </span>
+    </div>
+    <div class="rw-card-body">
+        <div class="rw-alert rw-alert-warning mb-3">
+            <i class="fa fa-info-circle me-2"></i>
+            <strong>Upload Proof of Payment:</strong>
+            For any outstanding charge, upload a screenshot, photo, or PDF of your payment receipt.
+            The agency will verify your proof and update your account.
+        </div>
+
+        <div class="table-responsive">
+            <table class="rw-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Due Date</th>
+                        <th>Proof Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in outstanding_charges %}
+                    <tr>
+                        <td>
+                            <span class="rw-badge {{ item.charge.get_status_badge }}">
+                                {{ item.charge.get_charge_type_display }}
+                            </span>
+                        </td>
+                        <td>{{ item.charge.description|default:"—"|truncatechars:50 }}</td>
+                        <td class="rw-table-amount credit">
+                            KSh {{ item.balance|floatformat:0 }}
+                        </td>
+                        <td>{{ item.charge.due_date|date:"d M Y" }}</td>
+                        <td>
+                            {% if item.charge.proof_status == 'VERIFIED' %}
+                                <span class="rw-badge rw-badge-success">
+                                    <i class="fa fa-check-circle me-1"></i>
+                                    Verified
+                                </span>
+                            {% elif item.charge.proof_status == 'PENDING' %}
+                                <span class="rw-badge rw-badge-warning">
+                                    <i class="fa fa-clock me-1"></i>
+                                    Pending
+                                </span>
+                            {% elif item.charge.proof_status == 'REJECTED' %}
+                                <span class="rw-badge rw-badge-danger">
+                                    <i class="fa fa-times-circle me-1"></i>
+                                    Rejected
+                                </span>
+                            {% else %}
+                                <span class="rw-badge rw-badge-secondary">
+                                    No Proof
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.can_upload %}
+                                <button class="rw-btn rw-btn-sm rw-btn-primary upload-btn"
+                                        data-charge-id="{{ item.charge.pk }}"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#uploadModal">
+                                    <i class="fa fa-upload me-1"></i>
+                                    Upload Proof
+                                </button>
+                            {% elif item.charge.proof_status == 'REJECTED' %}
+                                <button class="rw-btn rw-btn-sm rw-btn-outline-danger upload-btn"
+                                        data-charge-id="{{ item.charge.pk }}"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#uploadModal">
+                                    <i class="fa fa-redo me-1"></i>
+                                    Re-upload
+                                </button>
+                                {% if item.charge.proof_rejection_reason %}
+                                <br>
+                                <small class="text-danger" style="font-size: 11px;">
+                                    <i class="fa fa-info-circle me-1"></i>
+                                    {{ item.charge.proof_rejection_reason|truncatechars:50 }}
+                                </small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted" style="font-size: 13px;">
+                                    <i class="fa fa-check-circle me-1" style="color: var(--success);"></i>
+                                    All clear
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Total Outstanding Summary -->
+        <div class="mt-3 p-3" style="background: var(--bg-secondary); border-radius: 8px;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <strong>Total Outstanding:</strong>
+                    <span style="color: var(--danger); font-weight: 600; font-size: 18px;">
+                        KSh {{ total_outstanding|floatformat:0 }}
+                    </span>
+                </div>
+                <div>
+                    <span class="text-muted" style="font-size: 13px;">
+                        <i class="fa fa-file-upload me-1"></i>
+                        Upload proofs for any charge to clear your balance.
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ───────────────────────────────────────── -->
+<!-- PAYMENT HISTORY                           -->
+<!-- ───────────────────────────────────────── -->
+<div class="rw-card">
+    <div class="rw-card-header">
+        <h2 class="rw-card-title">
+            <i class="fa fa-history me-2"></i>
+            Payment History
+        </h2>
+        <span class="rw-badge rw-badge-secondary">
+            {{ payments|length }} transactions
+        </span>
+    </div>
+    <div class="rw-table-wrapper">
+        {% if payments %}
+        <table class="rw-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Reference</th>
+                    <th>Receipt</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td>{{ payment.payment_date|date:"d M Y" }}</td>
+                    <td class="rw-table-amount credit">KSh {{ payment.amount|floatformat:0 }}</td>
+                    <td>{{ payment.get_method_display }}</td>
+                    <td>{{ payment.reference|default:"—" }}</td>
+                    <td>
+                        {% if payment.receipt %}
+                        <a href="{% url 'portal:receipt_detail' payment.receipt.pk %}"
+                           class="rw-btn rw-btn-ghost rw-btn-sm">
+                            <i class="fa fa-receipt me-1"></i>{{ payment.receipt.receipt_number }}
+                        </a>
+                        {% else %}
+                        <span style="color:var(--text-secondary);font-size:13px;">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="rw-badge {{ payment.get_status_badge }}">
+                            {{ payment.get_status_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="rw-empty">
+            <div class="rw-empty-icon"><i class="fa fa-money-bill-wave"></i></div>
+            <div class="rw-empty-title">No payments yet</div>
+            <div class="rw-empty-text">Your verified payments will appear here.</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ───────────────────────────────────────── -->
+<!-- UPLOAD MODAL                              -->
+<!-- ───────────────────────────────────────── -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-upload me-2"></i>
+                    Upload Proof of Payment
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="uploadForm" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="charge_id" id="modalChargeId">
+                    
+                    <div class="rw-alert rw-alert-info mb-3">
+                        <i class="fa fa-info-circle me-2"></i>
+                        <strong>Accepted File Types:</strong>
+                        JPG, PNG, PDF, HEIC
+                        <br>
+                        <span class="text-muted">Maximum file size: 10MB</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="rw-label">
+                            Select Proof File
+                            <span style="color: var(--danger);">*</span>
+                        </label>
+                        <input type="file" 
+                               name="proof_of_payment" 
+                               class="rw-input" 
+                               id="proofFile"
+                               accept=".jpg,.jpeg,.png,.pdf,.heic,.heif"
+                               required>
+                        <div class="rw-helper">
+                            <small class="text-muted">
+                                Upload a clear screenshot or photo of your payment confirmation.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Progress -->
+                    <div class="mt-3" id="uploadProgressContainer" style="display: none;">
+                        <div style="font-size: 13px; margin-bottom: 4px;">
+                            <span id="uploadStatus">Uploading...</span>
+                            <span id="uploadPercent" style="float: right;">0%</span>
+                        </div>
+                        <div style="background: var(--border); border-radius: 8px; height: 8px; overflow: hidden;">
+                            <div id="uploadProgress" style="
+                                width: 0%;
+                                height: 100%;
+                                background: linear-gradient(90deg, var(--brand-primary), var(--success));
+                                border-radius: 8px;
+                                transition: width 0.3s ease;
+                            "></div>
+                        </div>
+                        <div class="mt-2">
+                            <small id="uploadFileInfo" class="text-muted"></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="rw-btn rw-btn-secondary" data-bs-dismiss="modal">
+                        <i class="fa fa-times me-1"></i>
+                        Cancel
+                    </button>
+                    <button type="submit" class="rw-btn rw-btn-primary" id="uploadSubmitBtn">
+                        <i class="fa fa-cloud-upload me-1"></i>
+                        Upload Proof
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ─────────────────────────────────────────
+        // MODAL HANDLING
+        // ─────────────────────────────────────────
+        const uploadModal = document.getElementById('uploadModal');
+        const modalChargeId = document.getElementById('modalChargeId');
+        const uploadForm = document.getElementById('uploadForm');
+        const uploadProgressContainer = document.getElementById('uploadProgressContainer');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const uploadPercent = document.getElementById('uploadPercent');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const uploadFileInfo = document.getElementById('uploadFileInfo');
+        const uploadSubmitBtn = document.getElementById('uploadSubmitBtn');
+        const proofFile = document.getElementById('proofFile');
+
+        // Handle upload button clicks
+        document.querySelectorAll('.upload-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const chargeId = this.getAttribute('data-charge-id');
+                modalChargeId.value = chargeId;
+                // Reset form
+                uploadForm.reset();
+                uploadProgressContainer.style.display = 'none';
+                uploadSubmitBtn.disabled = false;
+                uploadSubmitBtn.innerHTML = '<i class="fa fa-cloud-upload me-1"></i> Upload Proof';
+                // Set the form action
+                uploadForm.action = '/portal/payments/proof/' + chargeId + '/upload/';
+            });
+        });
+
+        // ─────────────────────────────────────────
+        // FILE INPUT HANDLING
+        // ─────────────────────────────────────────
+        proofFile.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/heic', 'application/pdf'];
+                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                
+                // Validate file type
+                if (!allowedTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|pdf|heic|heif)$/i)) {
+                    alert('Invalid file type. Please upload JPG, PNG, PDF, or HEIC files.');
+                    this.value = '';
+                    return;
+                }
+                
+                // Validate file size
+                if (file.size > maxSize) {
+                    alert('File size exceeds 10MB limit. Please compress or resize your file.');
+                    this.value = '';
+                    return;
+                }
+                
+                uploadFileInfo.textContent = `Selected: ${file.name} (${fileSizeMB} MB)`;
+            }
+        });
+
+        // ─────────────────────────────────────────
+        // FORM SUBMISSION WITH PROGRESS
+        // ─────────────────────────────────────────
+        uploadForm.addEventListener('submit', function(e) {
+            const file = proofFile.files[0];
+            if (!file) {
+                e.preventDefault();
+                alert('Please select a file to upload.');
+                return;
+            }
+            
+            // Show progress
+            uploadProgressContainer.style.display = 'block';
+            uploadSubmitBtn.disabled = true;
+            uploadSubmitBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Uploading...';
+            
+            // Simulate upload progress
+            let progress = 0;
+            const interval = setInterval(function() {
+                progress += Math.random() * 15 + 5;
+                if (progress >= 95) {
+                    clearInterval(interval);
+                    progress = 95;
+                    uploadStatus.textContent = 'Processing...';
+                }
+                uploadProgress.style.width = Math.min(progress, 95) + '%';
+                uploadPercent.textContent = Math.min(Math.round(progress), 95) + '%';
+            }, 300);
+            
+            // Let the form submit naturally
+            // The progress will complete on page reload
+        });
+
+        // ─────────────────────────────────────────
+        // AUTO-REFRESH FOR PENDING PROOFS
+        // ─────────────────────────────────────────
+        const pendingProofs = document.querySelectorAll('.rw-badge-warning');
+        if (pendingProofs.length > 0) {
+            // Check for pending proofs every 60 seconds
+            let refreshCount = 0;
+            setInterval(function() {
+                refreshCount++;
+                if (refreshCount >= 5) { // After 5 minutes, stop auto-refresh
+                    return;
+                }
+                // Only refresh if page is visible
+                if (!document.hidden) {
+                    location.reload();
+                }
+            }, 60000);
+        }
+
+        // ─────────────────────────────────────────
+        // TOOLTIP INITIALIZATION
+        // ─────────────────────────────────────────
+        // Add tooltips for long descriptions
+        document.querySelectorAll('td[title]').forEach(function(el) {
+            el.addEventListener('mouseenter', function() {
+                this.style.cursor = 'help';
+            });
+        });
+    });
+</script>
 {% endblock %}

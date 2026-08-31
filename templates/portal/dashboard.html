@@ -1,4 +1,6 @@
 {% extends 'portal/base_portal.html' %}
+{% load static %}
+
 {% block title %}My Account{% endblock %}
 {% block nav_dashboard %}active{% endblock %}
 
@@ -8,254 +10,191 @@
      PAGE HEADER
 ========================================================= -->
 <div class="rw-page-header">
-  <div>
-    <h1 class="rw-page-title">
-      Welcome, {{ tenant.full_name|default:"Tenant" }}
-    </h1>
-
-    <p class="rw-page-subtitle">
-      Here is your account overview.
-    </p>
-  </div>
+    <div>
+        <h1 class="rw-page-title">
+            Welcome, {{ tenant.full_name|default:"Tenant" }}
+        </h1>
+        <p class="rw-page-subtitle">
+            Here is your account overview.
+        </p>
+    </div>
 </div>
-
-
-{% if summary %}
 
 <!-- =========================================================
-     BALANCE CARDS
+     NO ACTIVE TENANCY MESSAGE
 ========================================================= -->
+{% if not has_active_tenancy %}
+<div class="rw-card">
+    <div class="rw-empty">
+        <div class="rw-empty-icon">
+            <i class="fa fa-house-crack"></i>
+        </div>
+        <div class="rw-empty-title">
+            No Active Tenancy Found
+        </div>
+        <div class="rw-empty-text">
+            You do not have an active tenancy. 
+            Please contact the office if you believe this is an error.
+        </div>
+        <div class="mt-3">
+            <a href="{% url 'dashboard' %}" class="rw-btn rw-btn-primary">
+                <i class="fa fa-arrow-left me-1"></i>
+                Return to Overview
+            </a>
+            <a href="{% url 'portal:profile' %}" class="rw-btn rw-btn-outline-secondary ms-2">
+                <i class="fa fa-user me-1"></i>
+                My Profile
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- =========================================================
+     BALANCE CARDS (Only if active tenancy)
+========================================================= -->
+{% if has_active_tenancy and summary %}
+
 <div class="row g-3 mb-4">
 
-  <!-- Outstanding Balance -->
-  <div class="col-12 col-md-4">
-    <div class="rw-stat-card h-100">
-
-      <div class="rw-stat-icon {% if summary.outstanding > 0 %}danger{% else %}success{% endif %}">
-        <i class="fa fa-file-invoice-dollar"></i>
-      </div>
-
-      <div class="rw-stat-body">
-
-        <div class="rw-stat-label">
-          Outstanding Balance
+    <!-- Outstanding Balance -->
+    <div class="col-12 col-md-4">
+        <div class="rw-stat-card h-100">
+            <div class="rw-stat-icon {% if summary.outstanding > 0 %}danger{% else %}success{% endif %}">
+                <i class="fa fa-file-invoice-dollar"></i>
+            </div>
+            <div class="rw-stat-body">
+                <div class="rw-stat-label">Outstanding Balance</div>
+                <div class="rw-stat-value">
+                    KSh {{ summary.outstanding|floatformat:0 }}
+                </div>
+                <div class="rw-stat-sub">
+                    {% if summary.outstanding > 0 %}
+                        Amount currently owed
+                    {% else %}
+                        Account is clear
+                    {% endif %}
+                </div>
+            </div>
         </div>
-
-        <div class="rw-stat-value">
-          KSh {{ summary.outstanding|floatformat:0 }}
-        </div>
-
-        <div class="rw-stat-sub">
-
-          {% if summary.outstanding > 0 %}
-            Amount currently owed
-          {% else %}
-            Account is clear
-          {% endif %}
-
-        </div>
-
-      </div>
-
     </div>
-  </div>
 
-
-  <!-- Monthly Rent -->
-  <div class="col-12 col-md-4">
-    <div class="rw-stat-card h-100">
-
-      <div class="rw-stat-icon primary">
-        <i class="fa fa-home"></i>
-      </div>
-
-      <div class="rw-stat-body">
-
-        <div class="rw-stat-label">
-          Monthly Rent
+    <!-- Monthly Rent -->
+    <div class="col-12 col-md-4">
+        <div class="rw-stat-card h-100">
+            <div class="rw-stat-icon primary">
+                <i class="fa fa-home"></i>
+            </div>
+            <div class="rw-stat-body">
+                <div class="rw-stat-label">Monthly Rent</div>
+                <div class="rw-stat-value">
+                    KSh {{ summary.monthly_rent|floatformat:0 }}
+                </div>
+                <div class="rw-stat-sub">
+                    Unit {{ summary.unit.unit_number }},
+                    {{ summary.unit.prop.name }}
+                </div>
+            </div>
         </div>
-
-        <div class="rw-stat-value">
-          KSh {{ summary.monthly_rent|floatformat:0 }}
-        </div>
-
-        <div class="rw-stat-sub">
-          Unit {{ summary.unit.unit_number }},
-          {{ summary.unit.prop.name }}
-        </div>
-
-      </div>
-
     </div>
-  </div>
 
-
-  <!-- Deposit -->
-  <div class="col-12 col-md-4">
-    <div class="rw-stat-card h-100">
-
-      <div class="rw-stat-icon secondary">
-        <i class="fa fa-piggy-bank"></i>
-      </div>
-
-      <div class="rw-stat-body">
-
-        <div class="rw-stat-label">
-          Deposit Held
+    <!-- Deposit -->
+    <div class="col-12 col-md-4">
+        <div class="rw-stat-card h-100">
+            <div class="rw-stat-icon secondary">
+                <i class="fa fa-piggy-bank"></i>
+            </div>
+            <div class="rw-stat-body">
+                <div class="rw-stat-label">Deposit Held</div>
+                <div class="rw-stat-value">
+                    KSh {{ summary.deposit_held|floatformat:0 }}
+                </div>
+                <div class="rw-stat-sub">
+                    of KSh {{ summary.deposit_required|floatformat:0 }} required
+                </div>
+            </div>
         </div>
-
-        <div class="rw-stat-value">
-          KSh {{ summary.deposit_held|floatformat:0 }}
-        </div>
-
-        <div class="rw-stat-sub">
-          of KSh {{ summary.deposit_required|floatformat:0 }} required
-        </div>
-
-      </div>
-
     </div>
-  </div>
 
 </div>
-
 
 <!-- =========================================================
      TENANT REQUESTS
 ========================================================= -->
-
 <div class="rw-page-header mt-4">
-
-  <div>
-    <h2 class="rw-page-title" style="font-size:22px;">
-      Need Assistance?
-    </h2>
-
-    <p class="rw-page-subtitle">
-      Submit a request to the property management office.
-    </p>
-  </div>
-
+    <div>
+        <h2 class="rw-page-title" style="font-size:22px;">
+            Need Assistance?
+        </h2>
+        <p class="rw-page-subtitle">
+            Submit a request to the property management office.
+        </p>
+    </div>
 </div>
-
 
 <div class="row g-3 mb-4">
 
-  <!-- =======================================================
-       MAINTENANCE REQUEST
-  ======================================================== -->
-  <div class="col-12 col-md-4">
+    <!-- Maintenance Request -->
+    <div class="col-12 col-md-4">
+        <a href="{% url 'portal:maintenance' %}" class="text-decoration-none">
+            <div class="rw-stat-card h-100">
+                <div class="rw-stat-icon warning">
+                    <i class="fa fa-screwdriver-wrench"></i>
+                </div>
+                <div class="rw-stat-body">
+                    <div class="rw-stat-label">Maintenance</div>
+                    <div class="rw-stat-value" style="font-size:18px;">
+                        Report a Problem
+                    </div>
+                    <div class="rw-stat-sub">
+                        Report repairs or maintenance issues in your unit.
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
 
-    <a href="{% url 'portal:maintenance' %}"
-       class="text-decoration-none">
+    <!-- Transfer Request -->
+    <div class="col-12 col-md-4">
+        <a href="{% url 'portal:transfer' %}" class="text-decoration-none">
+            <div class="rw-stat-card h-100">
+                <div class="rw-stat-icon primary">
+                    <i class="fa fa-right-left"></i>
+                </div>
+                <div class="rw-stat-body">
+                    <div class="rw-stat-label">Transfer</div>
+                    <div class="rw-stat-value" style="font-size:18px;">
+                        Request Transfer
+                    </div>
+                    <div class="rw-stat-sub">
+                        Request to move to another available unit.
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
 
-      <div class="rw-stat-card h-100">
-
-        <div class="rw-stat-icon warning">
-          <i class="fa fa-screwdriver-wrench"></i>
-        </div>
-
-        <div class="rw-stat-body">
-
-          <div class="rw-stat-label">
-            Maintenance
-          </div>
-
-          <div class="rw-stat-value" style="font-size:18px;">
-            Report a Problem
-          </div>
-
-          <div class="rw-stat-sub">
-            Report repairs or maintenance issues
-            in your unit.
-          </div>
-
-        </div>
-
-      </div>
-
-    </a>
-
-  </div>
-
-
-  <!-- =======================================================
-       TRANSFER REQUEST
-  ======================================================== -->
-  <div class="col-12 col-md-4">
-
-    <a href="{% url 'portal:transfer' %}"
-       class="text-decoration-none">
-
-      <div class="rw-stat-card h-100">
-
-        <div class="rw-stat-icon primary">
-          <i class="fa fa-right-left"></i>
-        </div>
-
-        <div class="rw-stat-body">
-
-          <div class="rw-stat-label">
-            Transfer
-          </div>
-
-          <div class="rw-stat-value" style="font-size:18px;">
-            Request Transfer
-          </div>
-
-          <div class="rw-stat-sub">
-            Request to move to another available
-            unit.
-          </div>
-
-        </div>
-
-      </div>
-
-    </a>
-
-  </div>
-
-
-  <!-- =======================================================
-       MOVE-OUT REQUEST
-  ======================================================== -->
-  <div class="col-12 col-md-4">
-
-    <a href="{% url 'portal:moveout' %}"
-       class="text-decoration-none">
-
-      <div class="rw-stat-card h-100">
-
-        <div class="rw-stat-icon danger">
-          <i class="fa fa-door-open"></i>
-        </div>
-
-        <div class="rw-stat-body">
-
-          <div class="rw-stat-label">
-            Move-Out
-          </div>
-
-          <div class="rw-stat-value" style="font-size:18px;">
-            Give Move-Out Notice
-          </div>
-
-          <div class="rw-stat-sub">
-            Submit your notice to the property
-            management office.
-          </div>
-
-        </div>
-
-      </div>
-
-    </a>
-
-  </div>
+    <!-- Move-Out Request -->
+    <div class="col-12 col-md-4">
+        <a href="{% url 'portal:moveout' %}" class="text-decoration-none">
+            <div class="rw-stat-card h-100">
+                <div class="rw-stat-icon danger">
+                    <i class="fa fa-door-open"></i>
+                </div>
+                <div class="rw-stat-body">
+                    <div class="rw-stat-label">Move-Out</div>
+                    <div class="rw-stat-value" style="font-size:18px;">
+                        Give Move-Out Notice
+                    </div>
+                    <div class="rw-stat-sub">
+                        Submit your notice to the property management office.
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
 
 </div>
-
 
 <!-- =========================================================
      UNPAID CHARGES
@@ -263,266 +202,306 @@
 {% if summary.unpaid_charges %}
 
 <div class="rw-card mb-4">
-
-  <div class="rw-card-header">
-
-    <h2 class="rw-card-title">
-
-      <i class="fa fa-triangle-exclamation me-2"
-         style="color:var(--warning);">
-      </i>
-
-      Outstanding Charges
-
-    </h2>
-
-  </div>
-
-
-  <div class="rw-table-wrapper">
-
-    <table class="rw-table">
-
-      <thead>
-
-        <tr>
-          <th>Description</th>
-          <th>Due Date</th>
-          <th>Amount</th>
-          <th>Paid</th>
-          <th>Balance</th>
-          <th>Status</th>
-        </tr>
-
-      </thead>
-
-
-      <tbody>
-
-        {% for charge in summary.unpaid_charges %}
-
-        <tr>
-
-          <td>
-            {{ charge.description|default:charge.get_charge_type_display }}
-          </td>
-
-          <td>
-            {{ charge.due_date }}
-          </td>
-
-          <td class="rw-table-amount">
-            KSh {{ charge.amount|floatformat:0 }}
-          </td>
-
-          <td class="rw-table-amount credit">
-            KSh {{ charge.amount_allocated|floatformat:0 }}
-          </td>
-
-          <td class="rw-table-amount debit">
-            KSh {{ charge.balance|floatformat:0 }}
-          </td>
-
-          <td>
-
-            <span class="rw-badge {{ charge.get_status_badge }}">
-              {{ charge.status }}
-            </span>
-
-          </td>
-
-        </tr>
-
-        {% endfor %}
-
-      </tbody>
-
-    </table>
-
-  </div>
-
+    <div class="rw-card-header">
+        <h2 class="rw-card-title">
+            <i class="fa fa-triangle-exclamation me-2" style="color:var(--warning);"></i>
+            Outstanding Charges
+        </h2>
+    </div>
+    <div class="rw-table-wrapper">
+        <table class="rw-table">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for charge in summary.unpaid_charges %}
+                <tr>
+                    <td>{{ charge.description|default:charge.get_charge_type_display }}</td>
+                    <td>{{ charge.due_date }}</td>
+                    <td class="rw-table-amount">KSh {{ charge.amount|floatformat:0 }}</td>
+                    <td class="rw-table-amount credit">KSh {{ charge.amount_allocated|floatformat:0 }}</td>
+                    <td class="rw-table-amount debit">KSh {{ charge.balance|floatformat:0 }}</td>
+                    <td>
+                        <span class="rw-badge {{ charge.get_status_badge }}">
+                            {{ charge.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 {% endif %}
 
+<!-- =========================================================
+     PENDING NOTICES
+========================================================= -->
+{% if pending_notices %}
+<div class="rw-card mb-4">
+    <div class="rw-card-header">
+        <h2 class="rw-card-title">
+            <i class="fa fa-file-invoice me-2" style="color:var(--warning);"></i>
+            Pending Rent Notices
+        </h2>
+        <span class="rw-badge rw-badge-warning">{{ pending_notices|length }}</span>
+    </div>
+    <div class="rw-table-wrapper">
+        <table class="rw-table">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Amount</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for notice in pending_notices %}
+                <tr>
+                    <td>{{ notice.period_start|date:"M Y" }}</td>
+                    <td class="rw-table-amount credit">KSh {{ notice.amount|floatformat:0 }}</td>
+                    <td>{{ notice.due_date|date:"d M Y" }}</td>
+                    <td>
+                        <span class="rw-badge {{ notice.get_status_badge }}">
+                            {{ notice.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'portal:notices' %}" class="rw-btn rw-btn-sm rw-btn-primary">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- =========================================================
+     OPEN MAINTENANCE REQUESTS
+========================================================= -->
+{% if open_maintenance %}
+<div class="rw-card mb-4">
+    <div class="rw-card-header">
+        <h2 class="rw-card-title">
+            <i class="fa fa-tools me-2" style="color:var(--info);"></i>
+            Open Maintenance Requests
+        </h2>
+        <span class="rw-badge rw-badge-info">{{ open_maintenance|length }}</span>
+    </div>
+    <div class="rw-table-wrapper">
+        <table class="rw-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for request in open_maintenance %}
+                <tr>
+                    <td>{{ request.title|truncatechars:40 }}</td>
+                    <td>
+                        <span class="rw-badge 
+                            {% if request.priority == 'URGENT' or request.priority == 'HIGH' %}rw-badge-danger
+                            {% elif request.priority == 'MEDIUM' %}rw-badge-warning
+                            {% else %}rw-badge-info{% endif %}">
+                            {{ request.get_priority_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="rw-badge {{ request.get_status_badge }}">
+                            {{ request.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ request.created_at|date:"d M Y" }}</td>
+                    <td>
+                        <a href="{% url 'portal:maintenance_detail' request.pk %}" 
+                           class="rw-btn rw-btn-sm rw-btn-primary">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- =========================================================
+     PENDING REQUESTS (Move-Out & Transfer)
+========================================================= -->
+<div class="row g-3 mb-4">
+    {% if pending_requests.moveout %}
+    <div class="col-md-6">
+        <div class="rw-card" style="border-left: 4px solid var(--warning);">
+            <div class="rw-card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1">
+                            <i class="fa fa-door-open me-2" style="color: var(--warning);"></i>
+                            Move-Out Request
+                        </h6>
+                        <p class="text-muted small mb-1">
+                            Status: <span class="badge {{ pending_requests.moveout.get_status_badge }}">
+                                {{ pending_requests.moveout.get_status_display }}
+                            </span>
+                        </p>
+                        <p class="text-muted small">
+                            Requested: {{ pending_requests.moveout.requested_moveout_date|date:"d M Y" }}
+                        </p>
+                    </div>
+                    <a href="{% url 'portal:moveout' %}" class="rw-btn rw-btn-sm rw-btn-primary">
+                        View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if pending_requests.transfer %}
+    <div class="col-md-6">
+        <div class="rw-card" style="border-left: 4px solid var(--info);">
+            <div class="rw-card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1">
+                            <i class="fa fa-exchange-alt me-2" style="color: var(--info);"></i>
+                            Transfer Request
+                        </h6>
+                        <p class="text-muted small mb-1">
+                            Status: <span class="badge {{ pending_requests.transfer.get_status_badge }}">
+                                {{ pending_requests.transfer.get_status_display }}
+                            </span>
+                        </p>
+                        <p class="text-muted small">
+                            To: {{ pending_requests.transfer.requested_unit.unit_number }}
+                        </p>
+                    </div>
+                    <a href="{% url 'portal:transfer' %}" class="rw-btn rw-btn-sm rw-btn-primary">
+                        View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
 
 <!-- =========================================================
      LAST PAYMENT
 ========================================================= -->
-{% if summary.last_payment %}
-
+{% if summary and summary.last_payment %}
 <div class="rw-card mb-4">
-
-  <div class="rw-card-header">
-
-    <h2 class="rw-card-title">
-
-      <i class="fa fa-clock-rotate-left me-2"></i>
-
-      Last Payment
-
-    </h2>
-
-
-    <a href="{% url 'portal:payments' %}"
-       class="rw-btn rw-btn-ghost rw-btn-sm">
-
-      View all
-
-    </a>
-
-  </div>
-
-
-  <div class="rw-card-body">
-
-    <div class="row">
-
-      <!-- Amount -->
-      <div class="col-6 col-md-3">
-
-        <div style="
-          font-size:12px;
-          color:var(--text-secondary);
-        ">
-          Amount
-        </div>
-
-        <div style="
-          font-size:18px;
-          font-weight:700;
-          color:var(--success);
-        ">
-          KSh {{ summary.last_payment.amount|floatformat:0 }}
-        </div>
-
-      </div>
-
-
-      <!-- Date -->
-      <div class="col-6 col-md-3">
-
-        <div style="
-          font-size:12px;
-          color:var(--text-secondary);
-        ">
-          Date
-        </div>
-
-        <div style="
-          font-size:15px;
-          font-weight:600;
-        ">
-          {{ summary.last_payment.payment_date }}
-        </div>
-
-      </div>
-
-
-      <!-- Method -->
-      <div class="col-6 col-md-3">
-
-        <div style="
-          font-size:12px;
-          color:var(--text-secondary);
-        ">
-          Method
-        </div>
-
-        <div style="
-          font-size:15px;
-          font-weight:600;
-        ">
-          {{ summary.last_payment.get_method_display }}
-        </div>
-
-      </div>
-
-
-      <!-- Status -->
-      <div class="col-6 col-md-3">
-
-        <div style="
-          font-size:12px;
-          color:var(--text-secondary);
-        ">
-          Status
-        </div>
-
-        <span class="rw-badge {{ summary.last_payment.get_status_badge }}">
-          {{ summary.last_payment.get_status_display }}
-        </span>
-
-      </div>
-
+    <div class="rw-card-header">
+        <h2 class="rw-card-title">
+            <i class="fa fa-clock-rotate-left me-2"></i>
+            Last Payment
+        </h2>
+        <a href="{% url 'portal:payments' %}" class="rw-btn rw-btn-ghost rw-btn-sm">
+            View all
+        </a>
     </div>
-
-  </div>
-
+    <div class="rw-card-body">
+        <div class="row">
+            <div class="col-6 col-md-3">
+                <div style="font-size:12px; color:var(--text-secondary);">Amount</div>
+                <div style="font-size:18px; font-weight:700; color:var(--success);">
+                    KSh {{ summary.last_payment.amount|floatformat:0 }}
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div style="font-size:12px; color:var(--text-secondary);">Date</div>
+                <div style="font-size:15px; font-weight:600;">
+                    {{ summary.last_payment.payment_date }}
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div style="font-size:12px; color:var(--text-secondary);">Method</div>
+                <div style="font-size:15px; font-weight:600;">
+                    {{ summary.last_payment.get_method_display }}
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div style="font-size:12px; color:var(--text-secondary);">Status</div>
+                <span class="rw-badge {{ summary.last_payment.get_status_badge }}">
+                    {{ summary.last_payment.get_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
 </div>
-
 {% endif %}
-
 
 <!-- =========================================================
      ACCOUNT SUPPORT INFORMATION
 ========================================================= -->
 <div class="rw-card mb-4">
-
-  <div class="rw-card-body">
-
-    <div class="d-flex align-items-start">
-
-      <div class="rw-stat-icon primary me-3">
-        <i class="fa fa-circle-info"></i>
-      </div>
-
-      <div>
-
-        <h5 class="fw-bold mb-1">
-          Need help with your tenancy?
-        </h5>
-
-        <p class="text-muted mb-0">
-          Use the request options above to contact the
-          property management office. Your request will
-          be reviewed and handled by an authorized member
-          of staff.
-        </p>
-
-      </div>
-
+    <div class="rw-card-body">
+        <div class="d-flex align-items-start">
+            <div class="rw-stat-icon primary me-3">
+                <i class="fa fa-circle-info"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold mb-1">
+                    Need help with your tenancy?
+                </h5>
+                <p class="text-muted mb-0">
+                    Use the request options above to contact the
+                    property management office. Your request will
+                    be reviewed and handled by an authorized member
+                    of staff.
+                </p>
+            </div>
+        </div>
     </div>
-
-  </div>
-
 </div>
 
-
-{% else %}
-
 <!-- =========================================================
-     NO ACTIVE TENANCY
+     QUICK ACTION BUTTONS
 ========================================================= -->
-
-<div class="rw-card">
-
-  <div class="rw-empty">
-
-    <div class="rw-empty-icon">
-      <i class="fa fa-house-crack"></i>
+<div class="row g-3">
+    <div class="col-md-3">
+        <a href="{% url 'portal:payments' %}" class="rw-btn rw-btn-outline-primary w-100">
+            <i class="fa fa-credit-card me-2"></i>
+            Payment History
+        </a>
     </div>
-
-    <div class="rw-empty-title">
-      No active tenancy found
+    <div class="col-md-3">
+        <a href="{% url 'portal:maintenance' %}" class="rw-btn rw-btn-outline-info w-100">
+            <i class="fa fa-tools me-2"></i>
+            Maintenance
+        </a>
     </div>
-
-    <div class="rw-empty-text">
-      Please contact the office if you believe this is an error.
+    <div class="col-md-3">
+        <a href="{% url 'portal:notices' %}" class="rw-btn rw-btn-outline-warning w-100">
+            <i class="fa fa-file-invoice me-2"></i>
+            Rent Notices
+        </a>
     </div>
-
-  </div>
-
+    <div class="col-md-3">
+        <a href="{% url 'portal:profile' %}" class="rw-btn rw-btn-outline-secondary w-100">
+            <i class="fa fa-user me-2"></i>
+            My Profile
+        </a>
+    </div>
 </div>
 
 {% endif %}

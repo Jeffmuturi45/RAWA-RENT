@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+
+{% block title %}Rent Notices{% endblock %}
+
+{% block page_title %}Rent Notices{% endblock %}
+
+{% block nav_payments %}active{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+    <div>
+        <h1 class="rw-page-title">Rent Notices</h1>
+        <p class="rw-page-subtitle">
+            Review and approve tenant proof of payments.
+        </p>
+    </div>
+
+{% if caps.manage_finance %}
+<form
+    method="post"
+    action="{% url 'finance:trigger_rent_generation' %}"
+>
+    {% csrf_token %}
+
+    <button
+        type="submit"
+        class="rw-btn rw-btn-primary"
+        onclick="return confirm('Generate rent notices for all active tenancies due today?')"
+    >
+        <i class="fa fa-calendar-plus me-1"></i>
+        Generate Rents
+    </button>
+</form>
+{% endif %}
+
+
+</div>
+
+<!-- Summary cards -->
+
+<div class="row g-3 mb-4">
+<!-- Pending -->
+<div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+
+        <div class="rw-stat-icon warning">
+            <i class="fa fa-clock"></i>
+        </div>
+
+        <div class="rw-stat-body">
+            <div class="rw-stat-label">
+                Pending
+            </div>
+
+            <div class="rw-stat-value">
+                {{ counts.pending }}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- Awaiting Review -->
+<div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+
+        <div class="rw-stat-icon primary">
+            <i class="fa fa-upload"></i>
+        </div>
+
+        <div class="rw-stat-body">
+            <div class="rw-stat-label">
+                Awaiting Review
+            </div>
+
+            <div class="rw-stat-value">
+                {{ counts.submitted }}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- Approved -->
+<div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+
+        <div class="rw-stat-icon success">
+            <i class="fa fa-circle-check"></i>
+        </div>
+
+        <div class="rw-stat-body">
+            <div class="rw-stat-label">
+                Approved
+            </div>
+
+            <div class="rw-stat-value">
+                {{ counts.approved }}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- Rejected -->
+<div class="col-6 col-md-3">
+    <div class="rw-stat-card">
+
+        <div class="rw-stat-icon danger">
+            <i class="fa fa-circle-xmark"></i>
+        </div>
+
+        <div class="rw-stat-body">
+            <div class="rw-stat-label">
+                Rejected
+            </div>
+
+            <div class="rw-stat-value">
+                {{ counts.rejected }}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</div>
+
+<!-- Filters -->
+
+<form method="get" class="mb-4">
+<div
+    style="
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+    "
+>
+
+    <!-- Status filter -->
+    <select
+        name="status"
+        class="rw-select"
+        style="max-width:180px;"
+    >
+
+        <option value="">
+            All statuses
+        </option>
+
+        {% for status in status_options %}
+        <option
+            value="{{ status.value }}"
+            {% if status.selected %}selected{% endif %}
+        >
+            {{ status.label }}
+        </option>
+        {% endfor %}
+
+    </select>
+
+
+    <!-- Property filter -->
+    <select
+        name="property"
+        class="rw-select"
+        style="max-width:200px;"
+    >
+
+        <option value="">
+            All properties
+        </option>
+
+        {% for p in properties %}
+        <option
+            value="{{ p.pk }}"
+            {% if p.selected %}selected{% endif %}
+        >
+            {{ p.name }}
+        </option>
+        {% endfor %}
+
+    </select>
+
+
+    <!-- Filter button -->
+    <button
+        type="submit"
+        class="rw-btn rw-btn-outline"
+    >
+        <i class="fa fa-filter"></i>
+        Filter
+    </button>
+
+
+    <!-- Clear filters -->
+    {% if selected_status or selected_property %}
+
+    <a
+        href="{% url 'finance:rent_notice_list' %}"
+        class="rw-btn rw-btn-ghost"
+    >
+        Clear
+    </a>
+
+    {% endif %}
+
+</div>
+
+</form>
+
+<!-- Rent notices table -->
+
+<div class="rw-card">
+<div class="rw-table-wrapper">
+
+    {% if notices %}
+
+    <table class="rw-table">
+
+        <thead>
+            <tr>
+                <th>Tenant</th>
+                <th>Unit</th>
+                <th>Period</th>
+                <th>Amount</th>
+                <th>Due</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+
+
+        <tbody>
+
+            {% for n in notices %}
+
+            <tr
+                {% if n.status == 'SUBMITTED' %}
+                style="background:var(--brand-light);"
+                {% endif %}
+            >
+
+                <!-- Tenant -->
+                <td style="font-weight:600;">
+                    {{ n.tenancy.tenant.full_name }}
+                </td>
+
+
+                <!-- Unit -->
+                <td style="font-size:13px;">
+                    {{ n.tenancy.unit.prop.name }}
+                    ·
+                    {{ n.tenancy.unit.unit_number }}
+                </td>
+
+
+                <!-- Period -->
+                <td style="font-size:13px;">
+                    {{ n.period_start|date:"M Y" }}
+                </td>
+
+
+                <!-- Amount -->
+                <td class="rw-table-amount">
+                    KSh {{ n.amount|floatformat:0 }}
+                </td>
+
+
+                <!-- Due date -->
+                <td
+                    style="
+                        font-size:13px;
+                        {% if n.is_overdue %}
+                            color:var(--danger);
+                            font-weight:600;
+                        {% endif %}
+                    "
+                >
+
+                    {{ n.due_date }}
+
+                    {% if n.is_overdue %}
+                    <span class="rw-badge rw-badge-danger">
+                        Overdue
+                    </span>
+                    {% endif %}
+
+                </td>
+
+
+                <!-- Status -->
+                <td>
+
+                    <span class="rw-badge {{ n.get_status_badge }}">
+                        {{ n.get_status_display }}
+                    </span>
+
+                </td>
+
+
+                <!-- Action -->
+                <td>
+
+                    {% if n.status == 'SUBMITTED' %}
+
+                    <a
+                        href="{% url 'finance:rent_notice_review' n.pk %}"
+                        class="rw-btn rw-btn-primary rw-btn-sm"
+                    >
+                        <i class="fa fa-eye me-1"></i>
+                        Review
+                    </a>
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+
+    {% else %}
+
+    <div class="rw-empty">
+
+        <div class="rw-empty-icon">
+            <i class="fa fa-file-invoice-dollar"></i>
+        </div>
+
+        <div class="rw-empty-title">
+            No rent notices
+        </div>
+
+        <div class="rw-empty-text">
+            Click "Generate Rents" to create notices for all active
+            tenancies due today.
+        </div>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+</div>
+
+{% endblock %}

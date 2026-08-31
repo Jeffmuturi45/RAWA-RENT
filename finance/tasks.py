@@ -306,7 +306,9 @@ def send_rent_due_reminders():
 # TASK 4: Admin-triggered bulk generation
 # ─────────────────────────────────────────
 
-@shared_task(bind=True, max_retries=2)
+# finance/tasks.py - Update admin_generate_rents_for_org
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=60)
 def admin_generate_rents_for_org(self, organization_id, triggered_by_user_id=None):
     """
     Called when admin clicks "Generate Rents" button.
@@ -319,13 +321,18 @@ def admin_generate_rents_for_org(self, organization_id, triggered_by_user_id=Non
     try:
         result = generate_rent_notices(organization_id=organization_id)
 
+        # Send notification to admin
         if triggered_by_user_id:
             try:
                 admin_user = User.objects.get(id=triggered_by_user_id)
+                from django.core.mail import send_mail
+                from django.conf import settings
+
+                # Send in-app notification
                 notify(
                     recipient=admin_user,
                     message=(
-                        f'Rent generation complete: '
+                        f'✅ Rent generation complete: '
                         f'{result["generated"]} notices created, '
                         f'{result["skipped"]} skipped, '
                         f'{result["errors"]} errors.'
@@ -334,6 +341,23 @@ def admin_generate_rents_for_org(self, organization_id, triggered_by_user_id=Non
                     level='success' if result['errors'] == 0 else 'warning',
                     notification_type='GENERAL',
                 )
+
+                # Optionally send email
+                if result['errors'] > 0:
+                    send_mail(
+                        subject='Rent Generation - Errors Occurred',
+                        message=(
+                            f'Rent generation completed with errors.\n\n'
+                            f'Generated: {result["generated"]}\n'
+                            f'Skipped: {result["skipped"]}\n'
+                            f'Errors: {result["errors"]}\n\n'
+                            f'Please check the logs for details.'
+                        ),
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[admin_user.email],
+                        fail_silently=True,
+                    )
+
             except User.DoesNotExist:
                 pass
 

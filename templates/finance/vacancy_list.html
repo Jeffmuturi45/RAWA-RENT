@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block title %}Vacant Units{% endblock %}
+
+{% block page_title %}Vacancy Management{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+    <div>
+        <h1 class="rw-page-title">Vacant Units</h1>
+        <p class="rw-page-subtitle">
+            {{ total }} vacant · Potential rent: KSh {{ potential_rent|floatformat:0 }}/mo
+        </p>
+    </div>
+</div>
+
+<form method="get" class="mb-4">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+
+        <select name="property" class="rw-select">
+
+            <option value="">All Properties</option>
+
+            {% for p in properties %}
+
+            <option value="{{ p.pk }}" {% if p.selected %}selected{% endif %}>
+                {{ p.name }}
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+        <button type="submit" class="rw-btn rw-btn-outline">
+            <i class="fa fa-filter"></i> Filter
+        </button>
+
+        {% if selected_property %}
+        <a href="{% url 'finance:vacancy_list' %}" class="rw-btn rw-btn-ghost">
+            Clear
+        </a>
+        {% endif %}
+
+    </div>
+
+</form>
+
+
+{% if unit_data %}
+
+<div class="row g-3">
+
+    {% for item in unit_data %}
+
+    <div class="col-12 col-md-6 col-lg-4">
+
+        <div class="rw-card h-100" style="
+                    border-left:4px solid
+                    {% if item.days_vacant and item.days_vacant > 30 %}
+                        var(--danger)
+                    {% elif item.days_vacant and item.days_vacant > 14 %}
+                        var(--warning)
+                    {% else %}
+                        var(--border)
+                    {% endif %};
+                ">
+
+            <div class="rw-card-body">
+
+                <div style="
+                            display:flex;
+                            justify-content:space-between;
+                            align-items:flex-start;
+                            margin-bottom:12px;
+                        ">
+
+                    <div>
+
+                        <div style="
+                                    font-size:18px;
+                                    font-weight:700;
+                                ">
+                            {{ item.unit.unit_number }}
+                        </div>
+
+
+                        <div style="
+                                    font-size:13px;
+                                    color:var(--text-secondary);
+                                ">
+                            {{ item.unit.prop.name }}
+                        </div>
+
+
+                        {% if item.unit.house_type %}
+
+                        <div style="
+                                        font-size:12px;
+                                        color:var(--text-secondary);
+                                    ">
+                            {{ item.unit.house_type.name }}
+                        </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <div style="text-align:right;">
+
+                        <div style="
+                                    font-size:16px;
+                                    font-weight:700;
+                                    color:var(--brand-primary);
+                                ">
+                            KSh {{ item.unit.rent_amount|floatformat:0 }}
+                        </div>
+
+
+                        <div style="
+                                    font-size:11px;
+                                    color:var(--text-secondary);
+                                ">
+                            per month
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="row g-2" style="font-size:13px;">
+
+
+                    <div class="col-6">
+
+                        <div style="color:var(--text-secondary);">
+                            Deposit
+                        </div>
+
+                        <div style="font-weight:600;">
+                            KSh {{ item.unit.deposit_amount|floatformat:0 }}
+                        </div>
+
+                    </div>
+
+
+                    {% if item.unit.floor %}
+
+                    <div class="col-6">
+
+                        <div style="color:var(--text-secondary);">
+                            Floor
+                        </div>
+
+                        <div style="font-weight:600;">
+                            {{ item.unit.floor }}
+                        </div>
+
+                    </div>
+
+                    {% endif %}
+
+
+                    <div class="col-6">
+
+                        <div style="color:var(--text-secondary);">
+                            Last Tenant
+                        </div>
+
+                        <div style="font-weight:600;">
+                            {{ item.last_tenant|default:"—" }}
+                        </div>
+
+                    </div>
+
+
+                    <div class="col-6">
+
+                        <div style="color:var(--text-secondary);">
+                            Vacated
+                        </div>
+
+                        <div style="font-weight:600;">
+                            {{ item.vacated_date|default:"—" }}
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+
+                {% if item.days_vacant is not None %}
+
+                <div style="
+                                margin-top:12px;
+                                padding:8px 12px;
+                                border-radius:6px;
+                                text-align:center;
+
+                                background:
+                                {% if item.days_vacant > 30 %}
+                                    #f8d7da
+                                {% elif item.days_vacant > 14 %}
+                                    #fff3cd
+                                {% else %}
+                                    var(--brand-light)
+                                {% endif %};
+
+                                color:
+                                {% if item.days_vacant > 30 %}
+                                    var(--danger)
+                                {% elif item.days_vacant > 14 %}
+                                    #856404
+                                {% else %}
+                                    var(--brand-primary)
+                                {% endif %};
+
+                                font-weight:700;
+                                font-size:14px;
+                            ">
+
+                    <i class="fa fa-calendar-days me-1"></i>
+
+                    {{ item.days_vacant }}
+                    day{{ item.days_vacant|pluralize }}
+                    vacant
+
+                </div>
+
+                {% endif %}
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+```
+
+{% else %}
+
+```
+<div class="rw-card">
+
+    <div class="rw-empty">
+
+        <div class="rw-empty-icon">
+            <i class="fa fa-circle-check" style="color:var(--success);"></i>
+        </div>
+
+
+        <div class="rw-empty-title">
+            No vacant units
+        </div>
+
+
+        <div class="rw-empty-text">
+            All units are currently occupied.
+        </div>
+
+    </div>
+
+</div>
+```
+
+{% endif %}
+
+{% endblock %}

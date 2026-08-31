@@ -28,6 +28,12 @@ media/
 # VS Code
 .vscode/
 
+
+# Logs
+logs/
+*.log
+*.log.*
+
 # Windows
 Thumbs.db
 desktop.ini

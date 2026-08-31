@@ -1,0 +1,672 @@
+{% extends 'portal/base_portal.html' %}
+
+{% block title %}Move-Out Request{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+    <div>
+        <h1 class="rw-page-title">Move-Out Request</h1>
+        <p class="rw-page-subtitle">
+            Submit your notice to leave your current unit.
+        </p>
+    </div>
+</div>
+
+{% if existing %}
+
+<div class="rw-card mb-4">
+
+    <div class="rw-card-header">
+
+        <h2 class="rw-card-title">
+            <i class="fa fa-door-open me-2"></i>
+            Your Move-Out Request
+        </h2>
+
+        <span class="rw-badge {{ existing.get_status_badge }}">
+            {{ existing.get_status_display }}
+        </span>
+
+    </div>
+
+    <div class="rw-card-body">
+
+        <!-- Progress Stepper -->
+        <div style="
+            display: flex;
+            align-items: flex-start;
+            gap: 0;
+            margin-bottom: 28px;
+            overflow-x: auto;
+        ">
+
+            <!-- Step 1 -->
+            <div style="
+                flex: 1;
+                text-align: center;
+                min-width: 90px;
+                position: relative;
+            ">
+                <div style="
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    margin: 0 auto 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background:
+                    {% if existing.get_status_step >= 1 %}
+                        var(--brand-primary)
+                    {% else %}
+                        var(--border)
+                    {% endif %}
+                    ;
+                    color: white;
+                    position: relative;
+                    z-index: 1;
+                ">
+                    <i class="fa fa-paper-plane" style="font-size: 13px;"></i>
+                </div>
+
+                <div style="
+                    font-size: 11px;
+                    font-weight: 600;
+                    color:
+                    {% if existing.get_status_step >= 1 %}
+                        var(--brand-primary)
+                    {% else %}
+                        var(--text-secondary)
+                    {% endif %}
+                    ;
+                ">
+                    Submitted
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div style="
+                flex: 1;
+                text-align: center;
+                min-width: 90px;
+                position: relative;
+            ">
+                <div style="
+                    position: absolute;
+                    top: 16px;
+                    left: 0;
+                    right: 50%;
+                    height: 2px;
+                    background:
+                    {% if existing.get_status_step >= 2 %}
+                        var(--brand-primary)
+                    {% else %}
+                        var(--border)
+                    {% endif %}
+                    ;
+                "></div>
+
+                <div style="
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    margin: 0 auto 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background:
+                    {% if existing.get_status_step >= 2 %}
+                        var(--brand-primary)
+                    {% else %}
+                        var(--border)
+                    {% endif %}
+                    ;
+                    color: white;
+                    position: relative;
+                    z-index: 1;
+                ">
+                    <i class="fa fa-magnifying-glass" style="font-size: 13px;"></i>
+                </div>
+
+                <div style="
+                    font-size: 11px;
+                    font-weight: 600;
+                    color:
+                    {% if existing.get_status_step >= 2 %}
+                        var(--brand-primary)
+                    {% else %}
+                        var(--text-secondary)
+                    {% endif %}
+                    ;
+                ">
+                    Under Inspection
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div style="
+                flex: 1;
+                text-align: center;
+                min-width: 90px;
+                position: relative;
+            ">
+                <div style="
+                    position: absolute;
+                    top: 16px;
+                    left: 0;
+                    right: 50%;
+                    height: 2px;
+                    background:
+                    {% if existing.get_status_step >= 3 %}
+                        var(--brand-primary)
+                    {% else %}
+                        var(--border)
+                    {% endif %}
+                    ;
+                "></div>
+
+                <div style="
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    margin: 0 auto 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background:
+                    {% if existing.get_status_step >= 3 %}
+                        var(--brand-primary)
+                    {% else %}
+                        var(--border)
+                    {% endif %}
+                    ;
+                    color: white;
+                    position: relative;
+                    z-index: 1;
+                ">
+                    <i class="fa fa-clipboard-check" style="font-size: 13px;"></i>
+                </div>
+
+                <div style="
+                    font-size: 11px;
+                    font-weight: 600;
+                    color:
+                    {% if existing.get_status_step >= 3 %}
+                        var(--brand-primary)
+                    {% else %}
+                        var(--text-secondary)
+                    {% endif %}
+                    ;
+                ">
+                    Checklist Complete
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div style="
+                flex: 1;
+                text-align: center;
+                min-width: 90px;
+                position: relative;
+            ">
+                <div style="
+                    position: absolute;
+                    top: 16px;
+                    left: 0;
+                    right: 50%;
+                    height: 2px;
+                    background:
+                    {% if existing.get_status_step >= 4 %}
+                        var(--brand-primary)
+                    {% else %}
+                        var(--border)
+                    {% endif %}
+                    ;
+                "></div>
+
+                <div style="
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    margin: 0 auto 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background:
+                    {% if existing.get_status_step >= 4 %}
+                        var(--brand-primary)
+                    {% else %}
+                        var(--border)
+                    {% endif %}
+                    ;
+                    color: white;
+                    position: relative;
+                    z-index: 1;
+                ">
+                    <i class="fa fa-gavel" style="font-size: 13px;"></i>
+                </div>
+
+                <div style="
+                    font-size: 11px;
+                    font-weight: 600;
+                    color:
+                    {% if existing.get_status_step >= 4 %}
+                        var(--brand-primary)
+                    {% else %}
+                        var(--text-secondary)
+                    {% endif %}
+                    ;
+                ">
+                    Decision
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Request Details -->
+        <div class="row g-3 mb-3">
+
+            <div class="col-6 col-md-3">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Requested Date
+                </div>
+                <div style="font-weight: 600;">
+                    {{ existing.requested_moveout_date|date:"d M Y" }}
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Submitted
+                </div>
+                <div style="font-weight: 600;">
+                    {{ existing.created_at|date:"d M Y" }}
+                </div>
+            </div>
+
+            {% if existing.inspected_at %}
+            <div class="col-6 col-md-3">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Inspection Date
+                </div>
+                <div style="font-weight: 600;">
+                    {{ existing.inspected_at|date:"d M Y" }}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if existing.reviewed_at %}
+            <div class="col-6 col-md-3">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Reviewed Date
+                </div>
+                <div style="font-weight: 600;">
+                    {{ existing.reviewed_at|date:"d M Y" }}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Current Unit Info -->
+        <div class="row g-3 mb-3">
+            <div class="col-12">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Current Unit
+                </div>
+                <div style="font-weight: 600;">
+                    {{ existing.tenancy.unit.unit_number }} 
+                    <span class="text-muted" style="font-weight: normal;">
+                        — {{ existing.tenancy.unit.prop.name }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        {% if existing.reason %}
+        <div style="
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        ">
+            Your Reason
+        </div>
+        <p style="font-size: 14px;">
+            {{ existing.reason }}
+        </p>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        {% if existing.status == 'INSPECTION' %}
+        <a href="{% url 'portal:moveout_detail' existing.pk %}" class="rw-btn rw-btn-primary">
+            <i class="fa fa-clipboard-check me-1"></i>
+            View Inspection Progress
+        </a>
+        {% endif %}
+
+        <!-- ───────────────────────────────────────── -->
+        <!-- MOVE-OUT PROOF UPLOAD SECTION             -->
+        <!-- ───────────────────────────────────────── -->
+        {% if existing.status == 'PENDING' and has_arrears %}
+        <div class="rw-card mt-3" style="border: 2px solid var(--warning);">
+            <div class="rw-card-body">
+                <div class="d-flex align-items-start">
+                    <div style="font-size: 24px; margin-right: 16px;">
+                        <i class="fa fa-upload" style="color: var(--warning);"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-1" style="color: var(--warning);">
+                            <i class="fa fa-exclamation-triangle me-1"></i>
+                            Payment Proof Required
+                        </h5>
+                        <p class="text-muted" style="font-size: 14px;">
+                            You have outstanding arrears of 
+                            <strong>KSh {{ arrears_amount|floatformat:0 }}</strong>.
+                            Please upload proof of payment for all outstanding charges
+                            to complete your move-out.
+                        </p>
+                        <a href="{% url 'portal:moveout_proof_upload' %}" 
+                           class="rw-btn rw-btn-warning mt-1">
+                            <i class="fa fa-upload me-1"></i>
+                            Upload Move-Out Payment Proofs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Status Messages -->
+        {% if existing.status == 'PENDING' %}
+        <div class="rw-alert rw-alert-warning mt-3">
+            <i class="fa fa-clock me-2"></i>
+            <strong>Your request is pending review.</strong>
+            The agency will review your request and schedule an inspection.
+            <br>
+            <small class="text-muted">
+                You will be notified when your request is updated.
+            </small>
+        </div>
+        {% endif %}
+
+        {% if existing.status == 'APPROVED' %}
+        <div class="rw-alert rw-alert-success mt-3">
+            <i class="fa fa-circle-check me-2"></i>
+            <strong>Move-out approved!</strong>
+            <br>
+            Deposit refund: <strong>KSh {{ existing.deposit_refundable|floatformat:0 }}</strong>
+            <br>
+            Outstanding arrears deducted: KSh {{ existing.outstanding_arrears|floatformat:0 }}
+            <br>
+            <small class="text-muted">
+                Your tenancy has been ended and the unit has been marked as vacant.
+            </small>
+        </div>
+        {% endif %}
+
+        {% if existing.status == 'REJECTED' %}
+        <div class="rw-alert rw-alert-danger mt-3">
+            <i class="fa fa-circle-xmark me-2"></i>
+            <strong>Request rejected.</strong>
+            <br>
+            {% if existing.rejection_note %}
+            Reason: {{ existing.rejection_note }}
+            {% else %}
+            No reason provided. Please contact the agency for more information.
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if existing.status == 'CANCELLED' %}
+        <div class="rw-alert rw-alert-secondary mt-3">
+            <i class="fa fa-circle-xmark me-2"></i>
+            <strong>Request cancelled.</strong>
+            This move-out request has been cancelled.
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% elif tenancy %}
+
+<!-- Check if tenant can request a move-out -->
+{% if not can_request and block_reason %}
+<div class="rw-alert rw-alert-danger mb-4">
+    <i class="fa fa-exclamation-circle me-2"></i>
+    <strong>Cannot Submit Move-Out Request</strong>
+    <br>
+    {{ block_reason }}
+</div>
+{% endif %}
+
+<!-- Show arrears warning if applicable -->
+{% if has_arrears %}
+<div class="rw-alert rw-alert-warning mb-4">
+    <i class="fa fa-money-bill-wave me-2"></i>
+    <strong>Outstanding Arrears: KSh {{ arrears_amount|floatformat:0 }}</strong>
+    <br>
+    <span class="text-muted">
+        Please clear all arrears before requesting a move-out. 
+        Outstanding charges must be paid in full.
+    </span>
+    <br>
+    <a href="{% url 'portal:statement' %}" class="rw-btn rw-btn-sm rw-btn-outline-primary mt-2">
+        <i class="fa fa-file-invoice me-1"></i>
+        View Statement
+    </a>
+</div>
+{% endif %}
+
+<!-- New Request Form -->
+<div class="rw-card mb-4">
+
+    <div class="rw-card-body">
+
+        <div class="rw-alert rw-alert-warning mb-4">
+            <i class="fa fa-triangle-exclamation me-2"></i>
+            <strong>Important:</strong>
+            <ul class="mb-0" style="padding-left: 20px; margin-top: 8px;">
+                <li>You must provide at least <strong>{{ min_notice_days }} days notice</strong> before your requested move-out date.</li>
+                <li>You cannot request a move-out date more than <strong>1 year</strong> in advance.</li>
+                <li>You must have <strong>no outstanding arrears</strong> to submit a move-out request.</li>
+                <li>The agency will inspect the unit before approving.</li>
+                <li>Your deposit will be refunded after deducting any arrears or damages found during inspection.</li>
+                <li>If you have a pending transfer request, you cannot submit a move-out request.</li>
+            </ul>
+        </div>
+
+        <form method="post" action="{% url 'portal:moveout_create' %}">
+            {% csrf_token %}
+
+            <div class="row g-3">
+
+                <div class="col-12 col-md-6">
+                    <label class="rw-label">
+                        Requested Move-Out Date
+                        <span style="color: var(--danger);">*</span>
+                    </label>
+                    <input type="date" 
+                           name="requested_moveout_date" 
+                           class="rw-input" 
+                           required
+                           min="{{ today|date:'Y-m-d' }}"
+                           max="{{ max_future_date|date:'Y-m-d' }}"
+                           {% if not can_request %}disabled{% endif %}>
+                    <div class="rw-helper">
+                        <small class="text-muted">
+                            Minimum {{ min_notice_days }} days from today. 
+                            Maximum 1 year in advance.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label class="rw-label">
+                        Reason for Moving Out
+                        <span style="color: var(--danger);">*</span>
+                    </label>
+                    <textarea name="reason" 
+                              class="rw-input" 
+                              rows="4"
+                              placeholder="Please provide a reason for moving out..."
+                              maxlength="2000"
+                              {% if not can_request %}disabled{% endif %}></textarea>
+                    <div class="rw-helper">
+                        <small class="text-muted">
+                            Maximum 2000 characters.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <!-- Submit Button - Disabled if cannot request -->
+                    <button type="submit" 
+                            class="rw-btn rw-btn-danger"
+                            {% if not can_request %}disabled{% endif %}
+                            onclick="return confirm('Are you sure you want to submit a move-out request?\n\nThis will notify the agency and start the move-out process.')">
+                        <i class="fa fa-door-open me-1"></i>
+                        Submit Move-Out Request
+                    </button>
+                    
+                    {% if not can_request %}
+                    <span class="text-muted ms-2" style="font-size: 13px;">
+                        <i class="fa fa-lock me-1"></i>
+                        Request blocked
+                    </span>
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<!-- Summary Box -->
+<div class="rw-card">
+    <div class="rw-card-header">
+        <h3 class="rw-card-title">
+            <i class="fa fa-file-invoice me-2"></i>
+            Your Move-Out Summary
+        </h3>
+    </div>
+    <div class="rw-card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Current Unit
+                </div>
+                <div style="font-weight: 600;">
+                    {{ tenancy.unit.unit_number }}
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Monthly Rent
+                </div>
+                <div style="font-weight: 600;">
+                    KSh {{ tenancy.monthly_rent|floatformat:0 }}
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Required Deposit
+                </div>
+                <div style="font-weight: 600;">
+                    KSh {{ tenancy.required_deposit|floatformat:0 }}
+                </div>
+            </div>
+        </div>
+        
+        {% if has_arrears %}
+        <hr>
+        <div class="row">
+            <div class="col-12">
+                <div class="rw-alert rw-alert-danger mb-0">
+                    <i class="fa fa-exclamation-triangle me-2"></i>
+                    <strong>Arrears: KSh {{ arrears_amount|floatformat:0 }}</strong>
+                    <br>
+                    <span class="text-muted">
+                        You must clear all arrears before submitting a move-out request.
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% else %}
+
+<div class="rw-card">
+    <div class="rw-empty">
+        <div class="rw-empty-icon">
+            <i class="fa fa-house-crack"></i>
+        </div>
+        <div class="rw-empty-title">
+            No active tenancy
+        </div>
+        <div class="rw-empty-text">
+            You need an active tenancy to submit a move-out request.
+        </div>
+    </div>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-set minimum date to 30 days from now
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.querySelector('input[name="requested_moveout_date"]');
+        if (dateInput) {
+            const today = new Date();
+            const minDate = new Date(today);
+            minDate.setDate(today.getDate() + {{ min_notice_days }});
+            
+            const maxDate = new Date(today);
+            maxDate.setFullYear(today.getFullYear() + 1);
+            
+            // Format dates for input
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            
+            dateInput.min = formatDate(minDate);
+            dateInput.max = formatDate(maxDate);
+            
+            // Set default value to 30 days from now
+            dateInput.value = formatDate(minDate);
+        }
+        
+        // Character counter for reason textarea
+        const reasonTextarea = document.querySelector('textarea[name="reason"]');
+        if (reasonTextarea) {
+            const maxLength = parseInt(reasonTextarea.getAttribute('maxlength') || 2000);
+            const helper = reasonTextarea.closest('.col-12').querySelector('.rw-helper small');
+            
+            reasonTextarea.addEventListener('input', function() {
+                const remaining = maxLength - this.value.length;
+                if (helper) {
+                    helper.textContent = `Remaining: ${remaining} characters. Maximum ${maxLength} characters.`;
+                    if (remaining < 0) {
+                        helper.style.color = 'var(--danger)';
+                    } else {
+                        helper.style.color = 'var(--text-secondary)';
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

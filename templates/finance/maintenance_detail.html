@@ -1,0 +1,460 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ mr.title }}{% endblock %}
+
+{% block page_title %}Maintenance Request{% endblock %}
+
+{% block content %}
+
+<div class="rw-page-header">
+    <div>
+        <h1 class="rw-page-title">{{ mr.title }}</h1>
+        <p class="rw-page-subtitle">
+            {{ mr.tenant.full_name }} ·
+            {{ mr.tenancy.unit.unit_number }} ·
+            {{ mr.created_at|date:"d M Y" }}
+        </p>
+    </div>
+
+<div style="display:flex; gap:8px; align-items:center;">
+    <span class="rw-badge {{ mr.get_priority_badge }}">
+        {{ mr.get_priority_display }}
+    </span>
+
+    <span class="rw-badge {{ mr.get_status_badge }}">
+        {{ mr.get_status_display }}
+    </span>
+
+    <a
+        href="{% url 'finance:maintenance_list' %}"
+        class="rw-btn rw-btn-ghost rw-btn-sm"
+    >
+        <i class="fa fa-arrow-left"></i>
+    </a>
+</div>
+
+</div>
+
+<div class="row g-4">
+
+<!-- Main content -->
+<div class="col-12 col-md-8">
+
+    <!-- Request details -->
+    <div class="rw-card mb-4">
+
+        <div class="rw-card-header">
+            <h2 class="rw-card-title">Details</h2>
+        </div>
+
+        <div class="rw-card-body">
+
+            <div class="mb-3">
+                <div style="font-size:12px; color:var(--text-secondary);">
+                    Category
+                </div>
+
+                <div style="font-weight:600;">
+                    {{ mr.get_category_display }}
+                </div>
+            </div>
+
+
+            <div class="mb-3">
+                <div style="font-size:12px; color:var(--text-secondary);">
+                    Description
+                </div>
+
+                <p style="line-height:1.6;">
+                    {{ mr.description }}
+                </p>
+            </div>
+
+
+            {% if mr.photo %}
+            <div>
+
+                <div
+                    style="
+                        font-size:12px;
+                        color:var(--text-secondary);
+                        margin-bottom:8px;
+                    "
+                >
+                    Photo
+                </div>
+
+                <img
+                    src="{{ mr.photo.url }}"
+                    alt="Maintenance request photo"
+                    style="
+                        max-width:100%;
+                        border-radius:8px;
+                        border:1px solid var(--border);
+                        cursor:pointer;
+                    "
+                    onclick="window.open(this.src, '_blank')"
+                >
+
+            </div>
+            {% endif %}
+
+
+            {% if mr.resolution_notes %}
+            <div class="mt-3 rw-alert rw-alert-success">
+
+                <i class="fa fa-circle-check me-2"></i>
+
+                <strong>Resolution:</strong>
+
+                {{ mr.resolution_notes }}
+
+            </div>
+            {% endif %}
+
+
+            {% if mr.tenant_rating %}
+            <div class="mt-3 rw-alert rw-alert-info">
+
+                <i class="fa fa-star me-2"></i>
+
+                Tenant rated {{ mr.tenant_rating }}/5.
+
+                {% if mr.tenant_feedback %}
+                    {{ mr.tenant_feedback }}
+                {% endif %}
+
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+
+    <!-- Pending request -->
+    {% if mr.status == 'PENDING' %}
+
+    <div
+        class="rw-card"
+        style="border:2px solid var(--brand-primary);"
+    >
+
+        <div class="rw-card-header">
+            <h2 class="rw-card-title">Assign Technician</h2>
+        </div>
+
+
+        <div class="rw-card-body">
+
+            <form method="post">
+
+                {% csrf_token %}
+
+                <div class="row g-3">
+
+                    <div class="col-12">
+
+                        <label class="rw-label">
+                            Assign To
+                            <span style="color:var(--danger);">*</span>
+                        </label>
+
+                        <input
+                            type="text"
+                            name="assigned_to"
+                            class="rw-input"
+                            required
+                            placeholder="Technician or staff name"
+                        >
+
+                    </div>
+
+
+                    <div class="col-12">
+
+                        <label class="rw-label">
+                            Staff Notes
+                        </label>
+
+                        <textarea
+                            name="staff_notes"
+                            class="rw-input"
+                            rows="2"
+                            placeholder="Internal notes..."
+                        ></textarea>
+
+                    </div>
+
+
+                    <div class="col-12">
+
+                        <button
+                            type="submit"
+                            name="action"
+                            value="assign"
+                            class="rw-btn rw-btn-primary"
+                        >
+                            <i class="fa fa-user-gear me-1"></i>
+                            Assign
+                        </button>
+
+
+                        <button
+                            type="submit"
+                            name="action"
+                            value="reject"
+                            class="rw-btn rw-btn-danger ms-2"
+                            onclick="return confirm('Reject this request?')"
+                        >
+                            <i class="fa fa-xmark me-1"></i>
+                            Reject Request
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- Assigned request -->
+    {% if mr.status == 'ASSIGNED' %}
+
+    <div
+        class="rw-card"
+        style="border:2px solid var(--warning);"
+    >
+
+        <div class="rw-card-body">
+
+            <form
+                method="post"
+                style="
+                    display:flex;
+                    gap:8px;
+                    align-items:center;
+                "
+            >
+
+                {% csrf_token %}
+
+                <button
+                    type="submit"
+                    name="action"
+                    value="in_progress"
+                    class="rw-btn rw-btn-warning"
+                >
+                    <i class="fa fa-play me-1"></i>
+                    Mark In Progress
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- In progress request -->
+    {% if mr.status == 'IN_PROGRESS' %}
+
+    <div
+        class="rw-card"
+        style="border:2px solid var(--success);"
+    >
+
+        <div class="rw-card-header">
+            <h2 class="rw-card-title">
+                Mark Resolved
+            </h2>
+        </div>
+
+
+        <div class="rw-card-body">
+
+            <form method="post">
+
+                {% csrf_token %}
+
+                <div class="mb-3">
+
+                    <label class="rw-label">
+
+                        Resolution Notes
+
+                        <span style="color:var(--danger);">
+                            *
+                        </span>
+
+                    </label>
+
+
+                    <textarea
+                        name="resolution_notes"
+                        class="rw-input"
+                        rows="3"
+                        required
+                        placeholder="Describe what was done to resolve the issue..."
+                    ></textarea>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    name="action"
+                    value="resolve"
+                    class="rw-btn rw-btn-success"
+                >
+                    <i class="fa fa-circle-check me-1"></i>
+                    Mark as Resolved
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- Sidebar -->
+<div class="col-12 col-md-4">
+
+    <div class="rw-card">
+
+        <div class="rw-card-header">
+            <h2 class="rw-card-title">
+                Tenant &amp; Unit
+            </h2>
+        </div>
+
+
+        <div class="rw-card-body">
+
+
+            <!-- Tenant -->
+            <div class="mb-3">
+
+                <div
+                    style="
+                        font-size:12px;
+                        color:var(--text-secondary);
+                    "
+                >
+                    Tenant
+                </div>
+
+                <div style="font-weight:600;">
+                    {{ mr.tenant.full_name }}
+                </div>
+
+            </div>
+
+
+            <!-- Unit -->
+            <div class="mb-3">
+
+                <div
+                    style="
+                        font-size:12px;
+                        color:var(--text-secondary);
+                    "
+                >
+                    Unit
+                </div>
+
+                <div style="font-weight:600;">
+                    {{ mr.tenancy.unit.prop.name }}
+                    ·
+                    {{ mr.tenancy.unit.unit_number }}
+                </div>
+
+            </div>
+
+
+            <!-- Assigned technician -->
+            {% if mr.assigned_to %}
+
+            <div class="mb-3">
+
+                <div
+                    style="
+                        font-size:12px;
+                        color:var(--text-secondary);
+                    "
+                >
+                    Assigned To
+                </div>
+
+
+                <div style="font-weight:600;">
+                    {{ mr.assigned_to }}
+                </div>
+
+
+                {% if mr.assigned_at %}
+                <div
+                    style="
+                        font-size:12px;
+                        color:var(--text-secondary);
+                    "
+                >
+                    {{ mr.assigned_at|date:"d M Y" }}
+                </div>
+                {% endif %}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- Resolved date -->
+            {% if mr.resolved_at %}
+
+            <div>
+
+                <div
+                    style="
+                        font-size:12px;
+                        color:var(--text-secondary);
+                    "
+                >
+                    Resolved
+                </div>
+
+
+                <div
+                    style="
+                        font-weight:600;
+                        color:var(--success);
+                    "
+                >
+                    {{ mr.resolved_at|date:"d M Y" }}
+                </div>
+
+            </div>
+
+            {% endif %}
+
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+{% endblock %}
